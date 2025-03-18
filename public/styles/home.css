@@ -1,0 +1,44 @@
+.postq {
+    margin-top: 20px;
+    margin-bottom: 20px;
+    margin: 20px auto;
+    width: 75%;
+    padding: 40px;
+    border: 1px solid #e6e6e6;
+    background-color: #fff;
+    border-radius: 5px;
+    box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 768px) {
+    .postq {
+        width: 90%;
+        padding: 20px;
+    }
+}
+
+@media (max-width: 576px) {
+    .postq {
+        width: 100%;
+        padding: 20px;
+    }
+}
+
+/* Change the font for the entire editor */
+.toastui-editor {
+    font-family: 'Poppins', sans-serif; /* Change to your preferred font */
+}
+
+/* Change the font inside the editing area */
+.toastui-editor-contents {
+    font-family: 'Poppins', sans-serif; /* Change to your preferred font */
+    font-size: 16px; /* Adjust size if needed */
+}
+
+.toastui-editor-mode-switch {
+    visibility: hidden;
+}
+
+#body {
+    margin-top: 16px;
+}

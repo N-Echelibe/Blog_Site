@@ -1,0 +1,45 @@
+</main>
+<footer class="py-5 text-center text-body-secondary bg-body-tertiary">
+    <p>Blog template built for <a href="https://getbootstrap.com/">Bootstrap</a> by <a
+            href="https://twitter.com/mdo">@mdo</a>.</p>
+    <p class="mb-0">
+        <a href="#">Back to top</a>
+    </p>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous">
+    </script>
+<script src="https://uicdn.toast.com/editor/latest/toastui-editor-all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+
+<script>
+    const editor = new toastui.Editor({
+        el: document.querySelector('#body'),
+        height: '500px',
+        initialEditType: 'wysiwyg',
+        previewStyle: 'horizontal',
+    });
+
+    document.getElementById('add-post').addEventListener('submit', (event) => {
+        document.getElementById('content').value = editor.getMarkdown();
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const jsonData = Object.fromEntries(formData.entries());
+        // coverts formData to JS Object
+
+        console.log(formData.forEach((value, key) => {
+            console.log(`${key}: ${value}`);
+        }));
+        console.log(jsonData);
+
+        axios.post("/modify", jsonData, {
+            headers: { "Content-Type": "multipart/form-data"},
+            // ☝️ is for when a form contains files
+            // it is not needed when form contains only plain text
+        }).then(response => console.log(response.data)).catch(error => console.log(error));
+    });
+</script>
+</body>
+
+</html>

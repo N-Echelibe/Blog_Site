@@ -1,0 +1,21 @@
+<%- include("partials/header.ejs")%>
+
+    <div class="postq">
+        <form id="add-post">
+            <div class="input-group mb-3">
+                <input type="text" class="form-control" placeholder="Enter post title here" aria-label="Username"
+                    aria-describedby="basic-addon1" name="title"/>
+            </div>
+            <div class="input-group">
+                <input type="file" class="form-control" id="inputGroupFile04" aria-describedby="inputGroupFileAddon04"
+                    aria-label="Upload" name="thumbnail" accept="image/*"/>
+                <!-- <button class="btn btn-outline-secondary" type="button" id="inputGroupFileAddon04">
+                    Button
+                </button> -->
+            </div>
+            <div id="body"></div>
+            <input type="hidden" name="content" id="content" />
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </div>
+    <%- include("partials/footer.ejs")%>
