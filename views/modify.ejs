@@ -4,17 +4,29 @@
         <form id="add-post">
             <div class="input-group mb-3">
                 <input type="text" class="form-control" placeholder="Enter post title here" aria-label="Username"
-                    aria-describedby="basic-addon1" name="title"/>
+                    aria-describedby="basic-addon1" name="title" required/>
             </div>
             <div class="input-group">
                 <input type="file" class="form-control" id="inputGroupFile04" aria-describedby="inputGroupFileAddon04"
-                    aria-label="Upload" name="thumbnail" accept="image/*"/>
+                    aria-label="Upload" name="thumbnail" accept="image/*" required/>
                 <!-- <button class="btn btn-outline-secondary" type="button" id="inputGroupFileAddon04">
                     Button
                 </button> -->
             </div>
-            <div id="body"></div>
-            <input type="hidden" name="content" id="content" />
+            <div class="input-group my-3">
+                <label class="input-group-text" for="inputGroupSelect01">Category</label>
+                <select class="form-select" id="inputGroupSelect01" name="category" required>
+                  <option selected>Choose...</option>
+                  <option value="world">World</option>
+                  <option value="technologyo">Technology</option>
+                  <option value="design">Design</option>
+                  <option value="culture">Culture</option>
+                  <option value="style">Style</option>
+                </select>
+              </div>
+              
+            <div id="body" class="mb-3"></div>
+            <input type="hidden" name="content" id="content" required/>
             <button type="submit" class="btn btn-primary">Submit</button>
         </form>
     </div>

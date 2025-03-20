@@ -34,7 +34,7 @@
         console.log(jsonData);
 
         axios.post("/modify", jsonData, {
-            headers: { "Content-Type": "multipart/form-data"},
+            headers: { "Content-Type": "multipart/form-data" },
             // ☝️ is for when a form contains files
             // it is not needed when form contains only plain text
         }).then(response => console.log(response.data)).catch(error => console.log(error));

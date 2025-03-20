@@ -1,0 +1,10 @@
+body {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+}
+
+.col-md-6 {
+  width: 400px;
+}
+
