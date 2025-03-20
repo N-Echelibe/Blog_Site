@@ -19,7 +19,7 @@ const supabase = createClient(
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(express.static("public"));
-app.use(cookieParser);
+app.use(cookieParser());
 
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
@@ -58,12 +58,14 @@ app.post("/login", async (req, res) => {
       password,
     });
     if (error) throw error;
-    res.json({message: 'Login Successful', data});
     res.cookie('session_token', data.session.access_token, {
       httpOnly: true, //prevents client-side js from accessing the cookie
       secure: true, //set true if using https
       maxAge: 7 * 86400000, // expiration time in ms (7days)
     });
+    console.log(data.session.access_token);
+    res.json({message: 'Login Successful', data});
+    // When you call res.json(), res.send(), or res.end(), the response is finalized, meaning no more headers (like cookies) can be added afterward.
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
