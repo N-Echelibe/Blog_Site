@@ -42,3 +42,7 @@
 #body {
     margin-top: 16px;
 }
+
+.back-button {
+    text-decoration: none;
+}

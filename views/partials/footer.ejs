@@ -28,16 +28,13 @@
         const jsonData = Object.fromEntries(formData.entries());
         // coverts formData to JS Object
 
-        console.log(formData.forEach((value, key) => {
-            console.log(`${key}: ${value}`);
-        }));
         console.log(jsonData);
 
         axios.post("/modify", jsonData, {
             headers: { "Content-Type": "multipart/form-data" },
             // ☝️ is for when a form contains files
             // it is not needed when form contains only plain text
-        }).then(response => console.log(response.data)).catch(error => console.log(error));
+        }).then((response) => window.location.href = response.data.redirect).catch(error => console.log("error"));
     });
 </script>
 </body>
