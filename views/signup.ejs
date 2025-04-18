@@ -22,6 +22,19 @@
               <h3 class="text-center mb-4">Login</h3>
               <form id="loginForm">
                 <div class="form-outline mb-4">
+                  <label class="form-label" for="form2Example0">Username</label>
+                  <input
+                    type="text"
+                    id="form2Example0"
+                    class="form-control"
+                    name="username"
+                    required
+                  />
+                  <div class="invalid-feedback">
+                    Username already exists. Try again
+                  </div>
+                </div>
+                <div class="form-outline mb-4">
                   <label class="form-label" for="form2Example1">Email</label>
                   <input
                     type="email"
@@ -119,7 +132,7 @@
           console.log(jsonData);
 
           axios
-            .post("/login", jsonData)
+            .post("/signup", jsonData)
             .then((response) => window.location.href = response.data.redirect)
             .catch((error) => console.log(error.response.data));
         });

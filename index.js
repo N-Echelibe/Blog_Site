@@ -13,10 +13,6 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 5000;
 
-const supabase = createClient(
-  process.env.SUPERBASE_URL,
-  process.env.SUPERBASE_KEY
-);
 const supabaseWithAuth = (req) => {
   if (req.cookies.session_token) {
     return createClient(process.env.SUPERBASE_URL, process.env.SUPERBASE_KEY, {
@@ -59,7 +55,7 @@ const authenticate = async (req, res, next) => {
   const {
     data: { user },
     error,
-  } = await supabase.auth.getUser(token);
+  } = await supabaseAuth.auth.getUser(token);
 
   if (!user || error) {
     req.user = null;
@@ -108,8 +104,7 @@ app.post("/login", async (req, res) => {
     return res.status(400).json("Username or Password not specified");
   }
   const supabaseAuth = supabaseWithAuth(req);
-  const email = req.body.email;
-  const password = req.body.password;
+  const {email, password} = req.body;
   try {
     const { data, error } = await supabaseAuth.auth.signInWithPassword({
       email,
@@ -139,6 +134,43 @@ app.post("/login", async (req, res) => {
 
 app.get("/signup", async (req, res) => {
   res.render("signup.ejs");
+})
+
+app.post("/signup", async (req, res) => {
+  if (!req.body.email || !req.body.password) {
+    return res.status(400).json("Username or Password not specified");
+  }
+  let supabaseAuth = supabaseWithAuth(req);
+  const {password, email, username} = req.body;
+  console.log(email);
+  try {
+    const { data, error } = await supabaseAuth.auth.signUp({
+      email: email,
+      password: password,
+    });
+    if (error) {
+      throw error
+    } else {
+      // res.cookie("session_token", data.session.access_token, {
+      //   httpOnly: true, //prevents client-side js from accessing the cookie
+      //   secure: true, //set true if using https
+      //   maxAge: 7 * 86400000, // expiration time in ms (7days)
+      // });
+      // res.cookie("refresh_token", data.session.refresh_token, {
+      //   httpOnly: true, //prevents client-side js from accessing the cookie
+      //   secure: true, //set true if using https
+      //   maxAge: 30 * 86400000, // expiration time in ms (7days)
+      // });
+      // supabaseAuth = supabaseWithAuth(req);
+      // const { error } = await supabaseAuth.from("users").insert([{
+      //   user_id: uid,
+      //   username: username,
+      // }]);
+      // if (error) throw error;
+    }
+  } catch (error) {
+    console.error(error);
+  }
 })
 
 app.get("/cookies", authenticate, async (req, res) => {
@@ -183,6 +215,7 @@ app.post(
           },
         ]);
         if (error) throw error;
+        res.json({ redirect: "/" });
       }
     } catch (err) {
       console.log(err);
@@ -204,6 +237,12 @@ app.get("/logout", authenticate, async (req, res) => {
   res.clearCookie("refresh_token");
   res.redirect("/");
 });
+
+app.get("/test", (req, res) => {
+  res.json({message: "hello"});
+  const gg = "hello"+" kitty";
+  console.log(gg);
+})
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

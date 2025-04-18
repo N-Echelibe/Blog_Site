@@ -1,0 +1,13 @@
+currently configuring signup route
+
+after signup, user is added to db but user session is null until
+ user confirms email
+
+i recommend adding a popup telling users to confirm their email
+ and redirecting them to login page
+
+im thinking of changing the followers table to link with auth.users
+ instead of public (reason: users might follow or gain a follower
+  before adding a username, causing inconsistencies)
+
+n.a...@gmail.com is currently unconfirmed.
