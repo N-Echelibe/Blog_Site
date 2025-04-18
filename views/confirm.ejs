@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+
+<body>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script>
+    async function sendTokensToServer() {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1))
+      const access_token = hashParams.get("access_token");
+      const refresh_token = hashParams.get("refresh_token");
+      console.log(access_token);
+      try {
+        const response = await axios.post('/confirm-account', {
+          access_token,
+          refresh_token,
+        });
+        window.history.replaceState({}, document.title, window.location.pathname);
+        window.location.href = "/";
+      } catch (error) {
+        console.error('Error sending tokens:', error.response?.data || error.message);
+      }
+    }
+    sendTokensToServer();
+  </script>
+</body>
+
+</html>

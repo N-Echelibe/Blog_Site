@@ -14,6 +14,23 @@
   </head>
 
   <body class="text-center">
+    <div class="hidden modal modal-sheet modal-fullscreen p-4 py-md-5" tabindex="-1" role="dialog" id="modalSheet">
+      <div class="modal-dialog">
+        <div class="modal-content rounded-4 shadow">
+          <div class="modal-header border-bottom-0">
+            <h1 class="modal-title fs-5">Confirm your Email</h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body py-0">
+            <p>Account has been created. Check your email and follow the instructions to verify your account.</p>
+          </div>
+          <div class="modal-footer flex-column align-items-stretch w-100 gap-2 pb-3 border-top-0">
+            <a href="/login" class="btn btn-lg btn-primary">Log in</a>
+            <!-- <button type="button" class="btn btn-lg btn-secondary" data-bs-dismiss="modal">Close</button> -->
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="container">
       <div class="row justify-content-center">
         <div class="col-md-6">
@@ -21,19 +38,6 @@
             <div class="card-body">
               <h3 class="text-center mb-4">Login</h3>
               <form id="loginForm">
-                <div class="form-outline mb-4">
-                  <label class="form-label" for="form2Example0">Username</label>
-                  <input
-                    type="text"
-                    id="form2Example0"
-                    class="form-control"
-                    name="username"
-                    required
-                  />
-                  <div class="invalid-feedback">
-                    Username already exists. Try again
-                  </div>
-                </div>
                 <div class="form-outline mb-4">
                   <label class="form-label" for="form2Example1">Email</label>
                   <input
@@ -129,11 +133,14 @@
           const formData = new FormData(event.target);
           const jsonData = Object.fromEntries(formData.entries());
 
-          console.log(jsonData);
 
           axios
             .post("/signup", jsonData)
-            .then((response) => window.location.href = response.data.redirect)
+            .then((response) => {
+              const modal = document.getElementById("modalSheet");
+              modal.classList.remove(response.data.class);
+              console.log(response)
+            })
             .catch((error) => console.log(error.response.data));
         });
     </script>

@@ -65,6 +65,18 @@ const authenticate = async (req, res, next) => {
   req.user = user;
   next();
 };
+function cookie(res, access_token, refresh_token) {
+  res.cookie("session_token", access_token, {
+    httpOnly: true, //prevents client-side js from accessing the cookie
+    secure: true, //set true if using https
+    maxAge: 7 * 86400000, // expiration time in ms (7days)
+  });
+  res.cookie("refresh_token", refresh_token, {
+    httpOnly: true, //prevents client-side js from accessing the cookie
+    secure: true, //set true if using https
+    maxAge: 30 * 86400000, // expiration time in ms (7days)
+  });
+}
 
 app.get("/", authenticate, async (req, res) => {
   const supabaseAuth = supabaseWithAuth(req);
@@ -104,7 +116,7 @@ app.post("/login", async (req, res) => {
     return res.status(400).json("Username or Password not specified");
   }
   const supabaseAuth = supabaseWithAuth(req);
-  const {email, password} = req.body;
+  const { email, password } = req.body;
   try {
     const { data, error } = await supabaseAuth.auth.signInWithPassword({
       email,
@@ -113,19 +125,9 @@ app.post("/login", async (req, res) => {
     if (error) {
       throw error;
     } else {
-      res.cookie("session_token", data.session.access_token, {
-        httpOnly: true, //prevents client-side js from accessing the cookie
-        secure: true, //set true if using https
-        maxAge: 7 * 86400000, // expiration time in ms (7days)
-      });
-      res.cookie("refresh_token", data.session.refresh_token, {
-        httpOnly: true, //prevents client-side js from accessing the cookie
-        secure: true, //set true if using https
-        maxAge: 30 * 86400000, // expiration time in ms (7days)
-      });
+      cookie(res, data.session.access_token, data.session.refresh_token);
       res.json({ redirect: "/" });
     }
-
     // When you call res.json(), res.send(), or res.end(), the response is finalized, meaning no more headers (like cookies) can be added afterward.
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -134,51 +136,71 @@ app.post("/login", async (req, res) => {
 
 app.get("/signup", async (req, res) => {
   res.render("signup.ejs");
-})
+});
 
 app.post("/signup", async (req, res) => {
   if (!req.body.email || !req.body.password) {
     return res.status(400).json("Username or Password not specified");
   }
   let supabaseAuth = supabaseWithAuth(req);
-  const {password, email, username} = req.body;
+  const { password, email, username } = req.body;
   console.log(email);
   try {
     const { data, error } = await supabaseAuth.auth.signUp({
       email: email,
       password: password,
     });
+    if (error) throw error;
+    res.json({ class: "hidden" });
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+app.get("/confirmaccount", (req, res) => {
+  res.render("confirm.ejs");
+})
+
+app.post("/confirm-account", async (req, res) => {
+  const { access_token, refresh_token } = req.body;
+
+  cookie(res, access_token, refresh_token);
+  const supabaseAuth = createClient(
+    process.env.SUPERBASE_URL,
+    process.env.SUPERBASE_KEY,
+    {
+      global: {
+        headers: { Authorization: `Bearer ${access_token}` },
+      },
+    }
+  );
+
+  try {
+    const {
+      data: { user },
+      error,
+    } = await supabaseAuth.auth.getUser(access_token);
     if (error) {
-      throw error
+      throw error;
     } else {
-      // res.cookie("session_token", data.session.access_token, {
-      //   httpOnly: true, //prevents client-side js from accessing the cookie
-      //   secure: true, //set true if using https
-      //   maxAge: 7 * 86400000, // expiration time in ms (7days)
-      // });
-      // res.cookie("refresh_token", data.session.refresh_token, {
-      //   httpOnly: true, //prevents client-side js from accessing the cookie
-      //   secure: true, //set true if using https
-      //   maxAge: 30 * 86400000, // expiration time in ms (7days)
-      // });
-      // supabaseAuth = supabaseWithAuth(req);
-      // const { error } = await supabaseAuth.from("users").insert([{
-      //   user_id: uid,
-      //   username: username,
-      // }]);
-      // if (error) throw error;
+      const { data, error } = await supabaseAuth.from("users").insert([
+        {
+          user_id: user.id,
+        },
+      ]);
+      if (error) throw error;
+      res.status(200).json({ success: true, data });
     }
   } catch (error) {
     console.error(error);
   }
-})
+});
 
 app.get("/cookies", authenticate, async (req, res) => {
-  console.log(req.cookies.session_token);
   const supabaseAuth = supabaseWithAuth(req);
   const { data, error } = await supabaseAuth.rpc("get_current_role");
   console.log(data);
-  console.log(req.cookies.refresh_token);
+  console.log(req.cookies.session_token);
 });
 
 app.get("/modify", authenticate, (req, res) => {
@@ -239,10 +261,10 @@ app.get("/logout", authenticate, async (req, res) => {
 });
 
 app.get("/test", (req, res) => {
-  res.json({message: "hello"});
-  const gg = "hello"+" kitty";
+  res.json({ message: "hello" });
+  const gg = "hello" + " kitty";
   console.log(gg);
-})
+});
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
