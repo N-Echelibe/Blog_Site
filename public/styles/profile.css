@@ -7,10 +7,20 @@
 }
 .profile-img{
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
-.profile-img img{
-  width: 70%;
-  height: 100%;
+.profile-img div{
+  max-width: 250px;
+}
+.profile-img img {
+  height: 125px;
+  object-fit: cover;
+  border-radius: 50%;
+  width: 125px;
+  border: 2px solid #0062cc;
 }
 .profile-img .file {
   position: relative;
@@ -28,11 +38,18 @@
   right: 0;
   top: 0;
 }
-.profile-head h5{
+.profile-head h5, #exampleFormControlInput1{
+  font-size: 1.25rem;
   color: #333;
+  font-weight: 500;
 }
-.profile-head h6{
+.profile-head h6, #exampleFormControlTextarea1{
   color: #0062cc;
+  font-size: 15px;
+  font-weight: 500;
+}
+.hidden{
+  display: none;
 }
 .profile-edit-btn{
   border: none;

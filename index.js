@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import cookieParser from "cookie-parser";
 import { marked, Marked } from "marked";
+import { relative } from "path";
 // ☝️ is used to convert markdown content to HTML
 
 dotenv.config();
@@ -34,19 +35,17 @@ const upload = multer({ storage });
 const authenticate = async (req, res, next) => {
   const supabaseAuth = supabaseWithAuth(req);
   let token = req.cookies.session_token;
-  const refresh_token = req.cookies.refresh_token;
+  let refresh_token = req.cookies.refresh_token;
 
   if (!token && refresh_token) {
     const { data, error } = await supabaseAuth.auth.refreshSession({
       refresh_token: refresh_token,
     });
+    if (error) throw error;
     if (data?.session) {
       token = data.session.access_token;
-      res.cookie("session_token", token, {
-        httpOnly: true,
-        secure: true,
-        maxAge: 7 * 86400000,
-      });
+      refresh_token = data.session.refresh_token;
+      cookie(res, token, refresh_token);
     }
   } else if (!token) {
     req.user = null;
@@ -67,27 +66,71 @@ const authenticate = async (req, res, next) => {
 };
 function cookie(res, access_token, refresh_token) {
   res.cookie("session_token", access_token, {
-    httpOnly: true, //prevents client-side js from accessing the cookie
-    secure: true, //set true if using https
-    maxAge: 7 * 86400000, // expiration time in ms (7days)
+    httpOnly: true,
+    secure: true,
+    maxAge: 3600000, // 1hr
   });
-  res.cookie("refresh_token", refresh_token, {
-    httpOnly: true, //prevents client-side js from accessing the cookie
-    secure: true, //set true if using https
-    maxAge: 30 * 86400000, // expiration time in ms (7days)
-  });
+
+  if (refresh_token) {
+    res.cookie("refresh_token", refresh_token, {
+      httpOnly: true,
+      secure: true,
+      maxAge: 30 * 86400000, // 30days
+    });
+  }
+}
+async function generateUsername(supabase) {
+  const characters = "abcdefghijklmnopqrstuvwxyz0123456789";
+  let username = "user_";
+  for (let i = 0; i < 8; i++) {
+    username += characters.charAt(
+      Math.floor(Math.random() * characters.length)
+    );
+  }
+  try {
+    const { data, error } = await supabase
+      .from("users")
+      .select("username")
+      .eq("username", username)
+      .maybeSingle();
+    if (error) throw error;
+    if (data) return await generateUsername(supabase);
+    return username;
+  } catch (error) {
+    console.error(error);
+  }
+}
+async function getUserInfo(req, supabase) {
+  try {
+    const { data: userinfo, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("user_id", req.user.id)
+      .single();
+    if (error) throw error;
+    return userinfo;
+  } catch (error) {
+    console.error(error);
+    return null;
+  }
 }
 
 app.get("/", authenticate, async (req, res) => {
   const supabaseAuth = supabaseWithAuth(req);
   try {
-    const { data, error } = await supabaseAuth.from("userPosts").select("*");
+    const { data: posts, error } = await supabaseAuth
+      .from("userPosts")
+      .select("*");
     if (error) throw error;
-    res.render("home.ejs", { user: req.user, posts: data });
+    if (req.user) {
+      const userinfo = await getUserInfo(req, supabaseAuth);
+      res.render("home.ejs", { user: userinfo, posts: posts });
+    } else {
+      res.render("home.ejs", { posts: posts });
+    }
   } catch (err) {
     console.log(err);
   }
-  // res.render("home.ejs", { user: req.user });
 });
 
 app.get("/post/:id", async (req, res) => {
@@ -159,11 +202,10 @@ app.post("/signup", async (req, res) => {
 
 app.get("/confirmaccount", (req, res) => {
   res.render("confirm.ejs");
-})
+});
 
 app.post("/confirm-account", async (req, res) => {
   const { access_token, refresh_token } = req.body;
-
   cookie(res, access_token, refresh_token);
   const supabaseAuth = createClient(
     process.env.SUPERBASE_URL,
@@ -174,7 +216,6 @@ app.post("/confirm-account", async (req, res) => {
       },
     }
   );
-
   try {
     const {
       data: { user },
@@ -183,9 +224,12 @@ app.post("/confirm-account", async (req, res) => {
     if (error) {
       throw error;
     } else {
+      const username = await generateUsername(supabaseAuth);
+      console.log(username);
       const { data, error } = await supabaseAuth.from("users").insert([
         {
           user_id: user.id,
+          username: username,
         },
       ]);
       if (error) throw error;
@@ -194,13 +238,6 @@ app.post("/confirm-account", async (req, res) => {
   } catch (error) {
     console.error(error);
   }
-});
-
-app.get("/cookies", authenticate, async (req, res) => {
-  const supabaseAuth = supabaseWithAuth(req);
-  const { data, error } = await supabaseAuth.rpc("get_current_role");
-  console.log(data);
-  console.log(req.cookies.session_token);
 });
 
 app.get("/modify", authenticate, (req, res) => {
@@ -247,11 +284,58 @@ app.post(
 
 app.get("/profile", authenticate, async (req, res) => {
   if (!req.user) return res.redirect("/login");
-  res.render("profile.ejs");
+  const supabaseAuth = supabaseWithAuth(req);
+  try {
+    const { data: userinfo, error } = await supabaseAuth
+      .from("users")
+      .select("*")
+      .eq("user_id", req.user.id)
+      .single();
+    if (error) throw error;
+    res.render("profile.ejs", { user: userinfo });
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+app.post("/profile", authenticate, upload.single("pfp"), async (req, res) => {
+  if (!req.user) return res.redirect("/login");
+  const supabaseAuth = supabaseWithAuth(req);
+  const userinfo = await getUserInfo(req, supabaseAuth);
+  try {
+    let filename;
+    let filepath;
+    let imageURL;
+    if (req.file) {
+      filename = Date.now() + "_" + req.file.originalname;
+      filepath = "pfp/" + filename;
+      imageURL = `${process.env.SUPERBASE_URL}/storage/v1/object/public/uploads/${filepath}`;
+      const { data, error } = await supabaseAuth.storage
+        .from("uploads")
+        .upload(`${filepath}`, req.file.buffer);
+      if (error) throw error;
+      if (userinfo.filepath) {
+        console.log("condition is true")
+        const { data, error } = await supabaseAuth.storage
+          .from("uploads")
+          .remove([userinfo.filepath]);
+        if (error) throw error;
+      }
+    }
+    const { data, error } = await supabaseAuth.from("users").update({
+      username: req.body.username,
+      pfp: imageURL || userinfo.pfp,
+      about: req.body.about,
+      filepath: filepath || userinfo.filepath,
+    }).eq("user_id", req.user.id);
+    if (error) throw error;
+    res.status(200).json("updated successfully");
+  } catch (error) {
+    console.error(error);
+  }
 });
 
 app.get("/logout", authenticate, async (req, res) => {
-  // res.clearCookie("session_token");
   const supabaseAuth = supabaseWithAuth(req);
   const { error } = await supabaseAuth.auth.signOut();
   if (error) throw error;
@@ -260,10 +344,13 @@ app.get("/logout", authenticate, async (req, res) => {
   res.redirect("/");
 });
 
-app.get("/test", (req, res) => {
-  res.json({ message: "hello" });
+app.get("/test", async (req, res) => {
   const gg = "hello" + " kitty";
   console.log(gg);
+  const supabaseAuth = supabaseWithAuth(req);
+  const { data, error } = await supabaseAuth.rpc("get_current_role");
+  console.log(data);
+  console.log(req.cookies.session_token);
 });
 
 app.listen(port, () => {
