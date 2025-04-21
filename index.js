@@ -357,6 +357,22 @@ app.post("/profile", authenticate, upload.single("pfp"), async (req, res) => {
   }
 });
 
+app.get("/search", authenticate, async (req, res) => {
+  const { q } = req.query;
+  if (!q) return res.json([]);
+  const supabaseAuth = supabaseWithAuth(req);
+  try {
+    const { data, error } = await supabaseAuth
+      .from('userPosts')
+      .select('title')
+      .ilike('title', `%${q}%`); // case-insensitive search
+    if (error) throw error;
+    res.json(data);
+  } catch (error) {
+    console.error(error);
+  }
+})
+
 app.get("/logout", authenticate, async (req, res) => {
   const supabaseAuth = supabaseWithAuth(req);
   const { error } = await supabaseAuth.auth.signOut();

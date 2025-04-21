@@ -57,4 +57,27 @@
         <button type="submit" class="btn btn-primary">Submit</button>
     </form>
 </div>
+<script>
+    const editor = new toastui.Editor({
+        el: document.querySelector('#body'),
+        height: '500px',
+        initialEditType: 'wysiwyg',
+        previewStyle: 'horizontal',
+    });
+    document.getElementById('add-post').addEventListener('submit', (event) => {
+        document.getElementById('content').value = editor.getMarkdown();
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const jsonData = Object.fromEntries(formData.entries());
+        // coverts formData to JS Object
+
+        console.log(jsonData);
+
+        axios.post("/modify", jsonData, {
+            headers: { "Content-Type": "multipart/form-data" },
+            // ☝️ is for when a form contains files
+            // it is not needed when form contains only plain text
+        }).then((response) => window.location.href = response.data.redirect).catch(error => console.log("error"));
+    });
+</script>
 <%- include("partials/footer.ejs")%>
