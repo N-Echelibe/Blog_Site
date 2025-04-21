@@ -22,8 +22,7 @@
           </a>
         </header>
       </div>
-    <main class="container"></main>
-</body>
+    <main class="container">
 
 <div class="postq">
     <form id="add-post">
@@ -49,7 +48,10 @@
                 <option value="style">Style</option>
             </select>
         </div>
-
+        <div class="form-floating">
+            <textarea class="form-control" name="lede" placeholder="Enter lede here" id="floatingTextarea" required></textarea>
+            <label for="floatingTextarea">Lede</label>
+          </div>
         <div id="body" class="mb-3"></div>
         <input type="hidden" name="content" id="content" required />
         <button type="submit" class="btn btn-primary">Submit</button>

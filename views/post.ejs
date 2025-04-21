@@ -1,13 +1,11 @@
-<%- include("partials/header.ejs")%>
-    <div class="postq">
-        <article class="blog-post">
-            <h2 class="display-5 link-body-emphasis mb-1"><%=post.title%></h2>
-            <p class="blog-post-meta"><%= post.created_at %> by <a href="#">Mark</a></p>
-            <div>
-                <%- content %>
-            </div>
-        </article>
-    </div>
+<% if (locals.user) { %> <%- include("partials/header.ejs", {user: user})%> <% }
+else { %> <%- include("partials/header.ejs")%> <% } %>
+<div class="postq">
+  <article class="blog-post">
+    <h2 class="display-5 link-body-emphasis mb-1"><%=post.title%></h2>
+    <p class="blog-post-meta"><%= post.created_at %> by <a href="#">Mark</a></p>
+    <div><%- content %></div>
+  </article>
+</div>
 
-
-    <%- include("partials/footer.ejs")%>
+<%- include("partials/footer.ejs")%>

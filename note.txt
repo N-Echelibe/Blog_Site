@@ -1,9 +1,4 @@
-- Debugged authenticate middleware
-- Created a function to handle cookies
-- Added default usernames
-- included user information in profile page
-- handled pfp uploads (uploading/deleting pfps)
-- added rls to supabase storage
+
 
 
 Error Handlers to set
@@ -17,3 +12,5 @@ Functionalities to set
 
 To test
   created_at column in userPosts
+
+can i set the row count of a table as a default value in another table?

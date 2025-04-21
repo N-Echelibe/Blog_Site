@@ -5,8 +5,9 @@ import multer from "multer";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import cookieParser from "cookie-parser";
-import { marked, Marked } from "marked";
+import { marked } from "marked";
 import { relative } from "path";
+import { ifError } from "assert";
 // ☝️ is used to convert markdown content to HTML
 
 dotenv.config();
@@ -114,6 +115,22 @@ async function getUserInfo(req, supabase) {
     return null;
   }
 }
+async function uploadImage(req, folder, supabase) {
+  const filename = Date.now() + "_" + req.file.originalname;
+  const filepath = folder + filename;
+  const imageURL = `${process.env.SUPERBASE_URL}/storage/v1/object/public/uploads/${filepath}`;
+  try {
+    const { data, error } = await supabase.storage
+      .from("uploads")
+      .upload(`${filepath}`, req.file.buffer);
+    if (error) throw error;
+    console.log("Image uploaded successfully");
+    return { filepath, imageURL };
+  } catch (error) {
+    console.error("Error uploading image:", error);
+    console.log("uploadImage function");
+  }
+}
 
 app.get("/", authenticate, async (req, res) => {
   const supabaseAuth = supabaseWithAuth(req);
@@ -133,7 +150,7 @@ app.get("/", authenticate, async (req, res) => {
   }
 });
 
-app.get("/post/:id", async (req, res) => {
+app.get("/post/:id", authenticate, async (req, res) => {
   const supabaseAuth = supabaseWithAuth(req);
   const id = req.params.id;
   try {
@@ -143,8 +160,9 @@ app.get("/post/:id", async (req, res) => {
       .eq("post_id", id)
       .single();
     if (error) throw error;
-    const content = marked(data.content);
-    res.render("post.ejs", { post: data, content: content });
+    const userinfo = await getUserInfo(req, supabaseAuth);
+    const content = await marked(data.content);
+    res.render("post.ejs", { user: userinfo, post: data, content: content });
   } catch (err) {
     console.log(err);
   }
@@ -255,27 +273,24 @@ app.post(
     }
     const supabaseAuth = supabaseWithAuth(req);
     try {
-      const filename = Date.now() + "-" + req.file.originalname;
-      const { data, error } = await supabaseAuth.storage
-        .from("uploads")
-        .upload(`thumbnail/${filename}`, req.file.buffer);
-      if (error) {
-        console.log(error);
-      } else {
-        const imageURL = `${process.env.SUPERBASE_URL}/storage/v1/object/public/uploads/thumbnail/${filename}`;
-        console.log(imageURL);
-        const { data, error } = await supabaseAuth.from("userPosts").insert([
-          {
-            user_id: req.user.id,
-            title: req.body.title,
-            content: req.body.content,
-            thumbnail: imageURL,
-            category: req.body.category,
-          },
-        ]);
-        if (error) throw error;
-        res.json({ redirect: "/" });
-      }
+      const { filepath, imageURL } = await uploadImage(
+        req,
+        "thumbnail/",
+        supabaseAuth
+      );
+      const { data, error } = await supabaseAuth.from("userPosts").insert([
+        {
+          user_id: req.user.id,
+          title: req.body.title,
+          content: req.body.content,
+          thumbnail: imageURL,
+          category: req.body.category,
+          lede: req.body.lede,
+          filepath: filepath,
+        },
+      ]);
+      if (error) throw error;
+      res.json({ redirect: "/profile" });
     } catch (err) {
       console.log(err);
     }
@@ -286,13 +301,23 @@ app.get("/profile", authenticate, async (req, res) => {
   if (!req.user) return res.redirect("/login");
   const supabaseAuth = supabaseWithAuth(req);
   try {
-    const { data: userinfo, error } = await supabaseAuth
-      .from("users")
+    const userinfo = await getUserInfo(req, supabaseAuth);
+    const { data: posts, error: postsError } = await supabaseAuth
+      .from("userPosts")
       .select("*")
       .eq("user_id", req.user.id)
-      .single();
-    if (error) throw error;
-    res.render("profile.ejs", { user: userinfo });
+      .order("post_id", { ascending: false });
+    if (postsError) throw postsError;
+    const { count: followers, error: followerError } = await supabaseAuth
+      .from("followers")
+      .select("*", { count: "exact", head: "true" })
+      .eq("following", req.user.id);
+    if (followerError) throw followerError;
+    const { count: following, error: followingError } = await supabaseAuth
+      .from("followers")
+      .select("*", { count: "exact", head: "true" })
+      .eq("follower", req.user.id);
+    res.render("profile.ejs", { user: userinfo, posts: posts, followers: followers, following: following });
   } catch (error) {
     console.error(error);
   }
@@ -307,27 +332,24 @@ app.post("/profile", authenticate, upload.single("pfp"), async (req, res) => {
     let filepath;
     let imageURL;
     if (req.file) {
-      filename = Date.now() + "_" + req.file.originalname;
-      filepath = "pfp/" + filename;
-      imageURL = `${process.env.SUPERBASE_URL}/storage/v1/object/public/uploads/${filepath}`;
-      const { data, error } = await supabaseAuth.storage
-        .from("uploads")
-        .upload(`${filepath}`, req.file.buffer);
-      if (error) throw error;
+      ({ filepath, imageURL } = await uploadImage(req, "pfp/", supabaseAuth));
       if (userinfo.filepath) {
-        console.log("condition is true")
+        console.log("condition is true");
         const { data, error } = await supabaseAuth.storage
           .from("uploads")
           .remove([userinfo.filepath]);
         if (error) throw error;
       }
     }
-    const { data, error } = await supabaseAuth.from("users").update({
-      username: req.body.username,
-      pfp: imageURL || userinfo.pfp,
-      about: req.body.about,
-      filepath: filepath || userinfo.filepath,
-    }).eq("user_id", req.user.id);
+    const { data, error } = await supabaseAuth
+      .from("users")
+      .update({
+        username: req.body.username,
+        pfp: imageURL || userinfo.pfp,
+        about: req.body.about,
+        filepath: filepath || userinfo.filepath,
+      })
+      .eq("user_id", req.user.id);
     if (error) throw error;
     res.status(200).json("updated successfully");
   } catch (error) {
@@ -345,14 +367,65 @@ app.get("/logout", authenticate, async (req, res) => {
 });
 
 app.get("/test", async (req, res) => {
-  const gg = "hello" + " kitty";
-  console.log(gg);
   const supabaseAuth = supabaseWithAuth(req);
   const { data, error } = await supabaseAuth.rpc("get_current_role");
   console.log(data);
-  console.log(req.cookies.session_token);
+  const fullPath = "alkd";
+  const { data: userProfile, error: userProfileError } = await supabase
+    .from("users")
+    .select("user_id")
+    .eq("filepath", fullPath)
+    .single();
+  console.log(userProfile);
+  console.error(userProfileError);
 });
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
+// Service
+const supabase = createClient(
+  process.env.SUPERBASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+const folders = ["pfp", "thumbnail"];
+async function cleanupOrphanedFiles() {
+  try {
+    for (const folder of folders) {
+      console.log(`Checking folder: ${folder}`);
+
+      const { data: files, error: listError } = await supabase.storage
+        .from("uploads") // your bucket name
+        .list(folder, { limit: 1000 });
+
+      if (listError) throw listError;
+      for (const file of files) {
+        const fullPath = `${folder}/${file.name}`;
+
+        // Check if this file exists in users table
+        const { data: userProfile, error: userProfileError } = await supabase
+          .from("users")
+          .select("user_id")
+          .eq("filepath", fullPath)
+          .single();
+
+        // Check if this file exists in userPosts table
+        const { data: userPost, error: userPostError } = await supabase
+          .from("userPosts")
+          .select("user_id")
+          .eq("filepath", fullPath)
+          .single();
+
+        // If file doesn't exist in either place, it's safe to delete
+        if (!userProfile && !userPost) {
+          await supabase.storage.from("uploads").remove([fullPath]);
+          console.log(`Deleted: ${fullPath}`);
+        }
+      }
+    }
+    console.log("Cleanup complete ✅");
+  } catch (err) {
+    console.error("Cleanup failed ❌", err);
+  }
+}
+// cleanupOrphanedFiles();

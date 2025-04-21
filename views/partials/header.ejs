@@ -9,6 +9,7 @@
     integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous" />
   <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
   <link rel="stylesheet" href="/styles/home.css" />
+  <link rel="stylesheet" href="/styles/profile.css">
 </head>
 
 <body>
@@ -36,7 +37,7 @@
             <% if (user.pfp) { %>
               <a href="/profile">
                 <div class="pfp">
-                  <img src="<% user.pfp %>" alt="profile picture" />
+                  <img src="<%= user.pfp %>" alt="profile picture" />
                 </div>
               </a>
               <% } else { %>
