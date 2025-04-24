@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 import { marked } from "marked";
 import { relative } from "path";
 import { ifError } from "assert";
+import { log } from "console";
 // ☝️ is used to convert markdown content to HTML
 
 dotenv.config();
@@ -101,14 +102,14 @@ async function generateUsername(supabase) {
     console.error(error);
   }
 }
-async function getUserInfo(req, supabase) {
+async function getUserInfo(id, supabase) {
   try {
-    const { data: userinfo, error } = await supabase
+    const { data: userinfo, error: usererror } = await supabase
       .from("users")
       .select("*")
-      .eq("user_id", req.user.id)
+      .eq("user_id", id)
       .single();
-    if (error) throw error;
+    if (usererror) throw usererror;
     return userinfo;
   } catch (error) {
     console.error(error);
@@ -139,12 +140,8 @@ app.get("/", authenticate, async (req, res) => {
       .from("userPosts")
       .select("*");
     if (error) throw error;
-    if (req.user) {
-      const userinfo = await getUserInfo(req, supabaseAuth);
-      res.render("home.ejs", { user: userinfo, posts: posts });
-    } else {
-      res.render("home.ejs", { posts: posts });
-    }
+    const userinfo = await getUserInfo(req.user.id, supabaseAuth);
+    res.render("home.ejs", { user: userinfo, posts: posts });
   } catch (err) {
     console.log(err);
   }
@@ -160,7 +157,7 @@ app.get("/post/:id", authenticate, async (req, res) => {
       .eq("post_id", id)
       .single();
     if (error) throw error;
-    const userinfo = await getUserInfo(req, supabaseAuth);
+    const userinfo = await getUserInfo(req.user.id, supabaseAuth);
     const content = await marked(data.content);
     res.render("post.ejs", { user: userinfo, post: data, content: content });
   } catch (err) {
@@ -297,27 +294,62 @@ app.post(
   }
 );
 
-app.get("/profile", authenticate, async (req, res) => {
-  if (!req.user) return res.redirect("/login");
+app.get("/profile/@:username", authenticate, async (req, res) => {
+  const username = req.params.username;
   const supabaseAuth = supabaseWithAuth(req);
+  let myProfile = false;
   try {
-    const userinfo = await getUserInfo(req, supabaseAuth);
+    const userinfo = await getUserInfo(
+      req.user.id,
+      supabaseAuth
+    );
+    const { data: profile, error: profileerror } = await supabaseAuth
+      .from("users")
+      .select("*")
+      .eq("username", username)
+      .single();
+    if (profileerror) throw profileerror;
+    if (req.user && req.user.id == profile.user_id) {
+      myProfile = true;
+    }
     const { data: posts, error: postsError } = await supabaseAuth
       .from("userPosts")
       .select("*")
-      .eq("user_id", req.user.id)
+      .eq("user_id", profile.user_id)
       .order("post_id", { ascending: false });
     if (postsError) throw postsError;
     const { count: followers, error: followerError } = await supabaseAuth
       .from("followers")
-      .select("*", { count: "exact", head: "true" })
-      .eq("following", req.user.id);
+      .select("follower", { count: "exact", head: true })
+      .eq("following", profile.user_id);
     if (followerError) throw followerError;
     const { count: following, error: followingError } = await supabaseAuth
       .from("followers")
-      .select("*", { count: "exact", head: "true" })
-      .eq("follower", req.user.id);
-    res.render("profile.ejs", { user: userinfo, posts: posts, followers: followers, following: following });
+      .select("following", { count: "exact", head: true })
+      .eq("follower", profile.user_id);
+    if (followingError) throw followingError;
+    const { data: myfollowersraw, error: myfollowerError } = await supabaseAuth
+      .from("followers")
+      .select("follower")
+      .eq("following", userinfo.user_id);
+    if (myfollowerError) throw myfollowerError;
+    const { data: myfollowingraw, error: myfollowingError } = await supabaseAuth
+      .from("followers")
+      .select("following")
+      .eq("follower", userinfo.user_id);
+    if (myfollowingError) throw myfollowingError;
+    const myfollowers = myfollowersraw.map((obj) => Object.values(obj)[0]);
+    const myfollowing = myfollowingraw.map((obj) => Object.values(obj)[0]);
+    res.render("profile.ejs", {
+      profile: profile,
+      user: userinfo,
+      posts: posts,
+      followers: followers,
+      following: following,
+      myProfile: myProfile,
+      myfollowers: myfollowers,
+      myfollowing: myfollowing,
+    });
   } catch (error) {
     console.error(error);
   }
@@ -326,7 +358,7 @@ app.get("/profile", authenticate, async (req, res) => {
 app.post("/profile", authenticate, upload.single("pfp"), async (req, res) => {
   if (!req.user) return res.redirect("/login");
   const supabaseAuth = supabaseWithAuth(req);
-  const userinfo = await getUserInfo(req, supabaseAuth);
+  const userinfo = await getUserInfo(req.user.id, supabaseAuth);
   try {
     let filename;
     let filepath;
@@ -357,19 +389,100 @@ app.post("/profile", authenticate, upload.single("pfp"), async (req, res) => {
   }
 });
 
-app.get("/search", authenticate, async (req, res) => {
+app.post("/follow", authenticate, async (req, res) => {
+  const id = req.body.id;
+  const supabaseAuth = supabaseWithAuth(req);
+  try {
+    const { data: check, error: checkerror } = await supabaseAuth
+      .from("followers")
+      .select("*")
+      .eq("follower", req.user.id)
+      .eq("following", id)
+      .single();
+    if (checkerror) console.log(checkerror);
+    if (check) {
+      const { data: unfollow, error: unfollowerror } = await supabaseAuth
+        .from("followers")
+        .delete()
+        .eq("follower", req.user.id)
+        .eq("following", id);
+      if (unfollowerror) throw unfollowerror;
+      console.log("unfollow");
+      res.status(200).json("Successful");
+    } else {
+      const { data: follow, error: followerror } = await supabase
+        .from("followers")
+        .insert([
+          {
+            follower: req.user.id,
+            following: id,
+          },
+        ]);
+      if (followerror) throw followerror;
+      console.log("follow");
+      res.status(200).json("Successful");
+    }
+  } catch (error) {
+    console.error(error);
+  }
+});
+
+app.get("/query", authenticate, async (req, res) => {
   const { q } = req.query;
   if (!q) return res.json([]);
   const supabaseAuth = supabaseWithAuth(req);
   try {
-    const { data, error } = await supabaseAuth
-      .from('userPosts')
-      .select('title')
-      .ilike('title', `%${q}%`); // case-insensitive search
-    if (error) throw error;
-    res.json(data);
+    const { data: posts, error: posterror } = await supabaseAuth
+      .from("userPosts")
+      .select("title")
+      .ilike("title", `%${q}%`);
+    if (posterror) throw posterror;
+    const { data: author, error: authorerror } = await supabaseAuth
+      .from("users")
+      .select("username")
+      .ilike("username", `%${q}%`);
+    if (authorerror) throw authorerror;
+    const data = [...posts, ...author]; // combines arrays together
+    const results = data.map((obj) => Object.values(obj)[0]); // selects the values in each object in the array. adding [0] at the end selects the first property in each object. By default, each object will return an array unless [] is used
+    results.sort();
+    console.log(results);
+    res.json(results);
   } catch (error) {
     console.error(error);
+  }
+});
+
+app.post("/search", authenticate, async (req, res) => {
+  const { search } = req.body;
+  // console.log(search);
+  res.json({redirect: `/search?q=${search}`});
+});
+
+app.get("/search", authenticate, async (req, res) => {
+  const {q} = req.query;
+  const supabaseAuth = supabaseWithAuth(req);
+  try {
+    const { data: posts, error: posterror } = await supabaseAuth
+      .from("userPosts")
+      .select("*")
+      .ilike("title", `%${q}%`);
+    if (posterror) throw posterror;
+
+    const { data: authors, error: authorerror } = await supabaseAuth
+      .from("users")
+      .select("*")
+      .ilike("username", `%${q}%`);
+    if (authorerror) throw authorerror;
+
+    const userinfo = await getUserInfo(req.user.id, supabaseAuth);
+    res.render("search.ejs", {
+      user: userinfo,
+      posts: posts,
+      authors: authors,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("An error occurred while processing your request.");
   }
 })
 
@@ -382,18 +495,26 @@ app.get("/logout", authenticate, async (req, res) => {
   res.redirect("/");
 });
 
-app.get("/test", async (req, res) => {
+app.get("/test", authenticate, async (req, res) => {
   const supabaseAuth = supabaseWithAuth(req);
-  const { data, error } = await supabaseAuth.rpc("get_current_role");
-  console.log(data);
-  const fullPath = "alkd";
-  const { data: userProfile, error: userProfileError } = await supabase
-    .from("users")
-    .select("user_id")
-    .eq("filepath", fullPath)
+  // const { data, error } = await supabaseAuth.rpc("get_current_role");
+  // console.log(data);
+  // const fullPath = "alkd";
+  // const { data: userProfile, error: userProfileError } = await supabase
+  //   .from("users")
+  //   .select("user_id")
+  //   .eq("filepath", fullPath)
+  //   .single();
+  // console.log(userProfile);
+  const id = "093d565f-7910-4434-abda-818948d41297";
+  const { data: check, error: checkerror } = await supabaseAuth
+    .from("followers")
+    .select("*")
+    .eq("follower", req.user_id)
+    .eq("following", id)
     .single();
-  console.log(userProfile);
-  console.error(userProfileError);
+  console.log(check);
+  console.log(checkerror);
 });
 
 app.listen(port, () => {

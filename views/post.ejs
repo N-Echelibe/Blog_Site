@@ -1,11 +1,37 @@
-<% if (locals.user) { %> <%- include("partials/header.ejs", {user: user})%> <% }
-else { %> <%- include("partials/header.ejs")%> <% } %>
-<div class="postq">
-  <article class="blog-post">
-    <h2 class="display-5 link-body-emphasis mb-1"><%=post.title%></h2>
-    <p class="blog-post-meta"><%= post.created_at %> by <a href="#">Mark</a></p>
-    <div><%- content %></div>
-  </article>
-</div>
+<% if (locals.user) { %> <%- include("partials/header.ejs", {user: user})%>
+    <% } else { %> <%- include("partials/header.ejs")%>
+        <% } %>
+          <div class="postq">
+            <article class="blog-postq">
+              <a type="button" data-bs-toggle="modal" data-bs-target="#thumbnail">
+                <img src="<%= post.thumbnail %>" alt="">
+              </a>
+              <h2 class="display-5 link-body-emphasis mb-1">
+                <%=post.title%>
+              </h2>
+              <p class="blog-post-meta">
+                <%= post.created_at %> by <a href="#">Mark</a>
+              </p>
+              <div><%- content %></div>
+            </article>
+            <!-- Button trigger modal -->
 
-<%- include("partials/footer.ejs")%>
+
+            <!-- Modal -->
+            <div class="modal fade" id="thumbnail" tabindex="-1" aria-labelledby="exampleModalLabel"
+              aria-hidden="true">
+              <div class="modal-dialog modal-xl ">
+                <div class="modal-content">
+                  <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="exampleModalLabel">Modal title</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                  </div>
+                  <div class="modal-body">
+                    <img src="<%= post.thumbnail %>" alt="" style="width: 100%;">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <%- include("partials/footer.ejs")%>

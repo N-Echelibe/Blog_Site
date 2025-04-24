@@ -125,3 +125,20 @@ blockquote {
   background-color: #f9f9f9;    /* Optional: adds a background color */
   font-style: italic;           /* Optional: makes it italicized */
 }
+#modal-body {
+  padding: 0;
+}
+#modal-body p, #modal-body h5 {
+  padding: 16px;
+  margin: 0;
+}
+#modal-body h5 {
+  color: #888;
+}
+#modal-body p:hover{
+  background-color: #888;
+  cursor: pointer;
+}
+#searchform {
+  width: 92%;
+}

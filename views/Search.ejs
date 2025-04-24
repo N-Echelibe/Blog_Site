@@ -1,9 +1,135 @@
-<% if (locals.user) { %> 
-  <%- include("partials/header.ejs", {user: user})%> 
-<% } else { %>
-  <%- include("partials/header.ejs")%>
-<% } %>
-<div>
-  <h1>hello</h1>
-</div>
-<%- include("partials/footer.ejs")%>
+<% if (locals.user) { %>
+  <%- include("partials/header.ejs", {user: user})%>
+    <% } else { %>
+      <%- include("partials/header.ejs")%>
+        <% } %>
+          <ul class="nav nav-tabs">
+            <li class="nav-item">
+              <a class="nav-link searchfilter active" data-target="all" href="#">All</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link searchfilter" data-target="posts" href="#">Posts</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link searchfilter" data-target="authors" href="#">Authors</a>
+            </li>
+          </ul>
+
+          <!-- Your divs -->
+          <div id="all" class="tab-content row row-cols-1 row-cols-md-2 g-4" style="margin: 1px 0 20px 0;">
+            <% if (posts.length==0) { %>
+              <h5>No Posts Yet</h5>
+              <% } else { %>
+                <% posts.forEach(post=> { %>
+                  <div class="col timeline">
+                    <div class="card h-100">
+                      <img src="<%= post.thumbnail %>" class="card-img-top" alt="..." />
+                      <div class="col p-4 d-flex flex-column position-static">
+                        <strong class="d-inline-block mb-2 text-success-emphasis">
+                          <%= post.category %>
+                        </strong>
+                        <h3 class="mb-0">
+                          <%= post.title %>
+                        </h3>
+                        <div class="mb-1 text-body-secondary">
+                          <%= post.created_at %>
+                        </div>
+                        <p class="mb-auto">
+                          <%= post.lede %>
+                        </p>
+                        <a href="/post/<%= post.post_id %>" class="icon-link gap-1 icon-link-hover stretched-link">
+                          Continue reading
+                          <svg class="bi">
+                            <use xlink:href="#chevron-right"></use>
+                          </svg>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                  <% }) %>
+                    <% } %>
+          </div>
+          <div id="posts" class="tab-content row row-cols-1 row-cols-md-2 g-4"
+            style="margin: 1px 0 20px 0; display: none;">
+            <% if (posts.length==0) { %>
+              <h5>No Posts Yet</h5>
+              <% } else { %>
+                <% posts.forEach(post=> { %>
+                  <div class="col timeline">
+                    <div class="card h-100">
+                      <img src="<%= post.thumbnail %>" class="card-img-top" alt="..." />
+                      <div class="col p-4 d-flex flex-column position-static">
+                        <strong class="d-inline-block mb-2 text-success-emphasis">
+                          <%= post.category %>
+                        </strong>
+                        <h3 class="mb-0">
+                          <%= post.title %>
+                        </h3>
+                        <div class="mb-1 text-body-secondary">
+                          <%= post.created_at %>
+                        </div>
+                        <p class="mb-auto">
+                          <%= post.lede %>
+                        </p>
+                        <a href="/post/<%= post.post_id %>" class="icon-link gap-1 icon-link-hover stretched-link">
+                          Continue reading
+                          <svg class="bi">
+                            <use xlink:href="#chevron-right"></use>
+                          </svg>
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                  <% }) %>
+                    <% } %>
+          </div>
+          <div id="authors" class="tab-content" style="display: none;">
+            <% if (authors.length==0) { %>
+              <h5>No authors found</h5>
+            <% } else {%>
+              <% authors.forEach((author)=> { %>
+                <a href="/profile/@<%= author.username %>" class="author-link">
+                  <div class="author">
+                    <div class="authorpfp">
+                      <img src="<%= author.pfp %>" alt="">
+                    </div>
+                    <div class="authorinfo">
+                      <h5>
+                        <%= author.username %>
+                      </h5>
+                      <p><span>999</span> Followers</p>
+                      <p>
+                        <%= author.about %>
+                      </p>
+                    </div>
+                  </div>
+                </a>
+              <% }) %>
+            <%}%>
+          </div>
+
+          <script>
+            document.addEventListener("DOMContentLoaded", function () {
+              const tabTriggers = document.querySelectorAll('.searchfilter');
+              const contents = document.querySelectorAll('.tab-content');
+
+              tabTriggers.forEach(function (tab) {
+                tab.addEventListener("click", function (event) {
+                  event.preventDefault();
+
+                  tabTriggers.forEach(rem => rem.classList.remove("active"));
+                  this.classList.add("active");
+
+                  // Hide all content divs
+                  contents.forEach(content => content.style.display = "none");
+
+                  // Show the selected content div
+                  const targetId = this.getAttribute('data-target');
+                  const targetDiv = document.getElementById(targetId);
+                  targetDiv.style.display = "flex";
+                });
+              });
+            });
+          </script>
+
+          <%- include("partials/footer.ejs")%>

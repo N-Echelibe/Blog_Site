@@ -1,3 +1,6 @@
+fix (req.user being passed) logic in all pages
+
+design the frontend to display the authors
 
 
 
@@ -13,4 +16,3 @@ Functionalities to set
 To test
   created_at column in userPosts
 
-can i set the row count of a table as a default value in another table?

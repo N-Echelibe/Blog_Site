@@ -16,23 +16,26 @@
 <script>
     const searchInput = document.getElementById("search");
     const resultsDiv = document.getElementById("modal-body");
+    document.getElementById('searchform').addEventListener("submit", (event) => {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        const jsonData = Object.fromEntries(formData.entries());
+        axios.post("/search", jsonData).then((response) => window.location.href = response.data.redirect).catch((error) => console.log(error.response.data));
+    })
     let timeout;
-    console.log("js is fine");
     searchInput.addEventListener("input", async (e) => {
         clearTimeout(timeout);
         timeout = setTimeout(() => {
             const query = e.target.value.trim();
             if (query.length > 0) {
-                console.log(query);
                 search(query)
             }
         }, 300);
     });
     async function search(query) {
         try {
-            const response = await axios.get(`/search?q=${encodeURIComponent(query)}`);
+            const response = await axios.get(`/query?q=${encodeURIComponent(query)}`);
             const results = response.data;
-            console.log(results);
             displayResult(results)
         } catch (error) {
             console.log(error);
@@ -41,10 +44,10 @@
     }
     function displayResult(results) {
         if (results.length === 0) {
-            resultsDiv.innerHTML = '<p>No results found</p>';
+            resultsDiv.innerHTML = '<h5>No results found</h5>';
             return;
         }
-        resultsDiv.innerHTML = results.map(item => `<p onclick="replace('${item.title}');" >${item.title}</p>`).join('');
+        resultsDiv.innerHTML = results.map(item => `<p onclick="replace('${item}');" >${item}</p>`).join('');
     }
     function replace(title) {
         searchInput.value = title;
