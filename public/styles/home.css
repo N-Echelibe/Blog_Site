@@ -1,86 +1,201 @@
 .postq {
-    margin-top: 20px;
-    margin-bottom: 20px;
-    margin: 20px auto;
-    width: 75%;
-    padding: 40px;
-    border: 1px solid #e6e6e6;
-    background-color: #fff;
-    border-radius: 5px;
-    box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+  margin-bottom: 20px;
+  margin: 20px auto;
+  width: 75%;
+  padding: 40px;
+  border: 1px solid #e6e6e6;
+  background-color: #fff;
+  border-radius: 5px;
+  box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.1);
 }
 
 @media (max-width: 768px) {
-    .postq {
-        width: 90%;
-        padding: 20px;
-    }
+  .postq {
+    width: 90%;
+    padding: 20px;
+  }
 }
 
 @media (max-width: 576px) {
-    .postq {
-        width: 100%;
-        padding: 20px;
-    }
+  .postq {
+    width: 100%;
+    padding: 20px;
+  }
 }
 
 /* Change the font for the entire editor */
 .toastui-editor {
-    font-family: 'Poppins', sans-serif; /* Change to your preferred font */
+  font-family: "Poppins", sans-serif; /* Change to your preferred font */
 }
 
 /* Change the font inside the editing area */
 .toastui-editor-contents {
-    font-family: 'Poppins', sans-serif; /* Change to your preferred font */
-    font-size: 16px; /* Adjust size if needed */
+  font-family: "Poppins", sans-serif; /* Change to your preferred font */
+  font-size: 16px; /* Adjust size if needed */
 }
 
 .toastui-editor-mode-switch {
-    visibility: hidden;
+  visibility: hidden;
 }
 
 #body {
-    margin-top: 16px;
+  margin-top: 16px;
 }
 
 .back-button {
-    text-decoration: none;
+  text-decoration: none;
 }
 
-.pfp img{
-    height: 40px;
-    width: 40px;
-    object-fit: cover;
-    border-radius: 50%;
+.pfp img {
+  height: 40px;
+  width: 40px;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
-.blog-postq img{
-    width: 100%;
-    margin-bottom: 30px;
+.blog-postq img {
+  width: 100%;
+  margin-bottom: 30px;
 }
 
 .author {
-    display: flex;
-    align-items: center;
+  display: flex;
+  align-items: center;
 }
 
 .author img {
-    width: 90px;
-    height: 90px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin: 16px;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 16px;
 }
 
 .authorinfo * {
-    margin: 0;
+  margin: 0;
 }
 
-.authorinfo span, .authorinfo h5 {
-    font-weight: 700;
+.authorinfo span,
+.authorinfo h5 {
+  font-weight: 700;
 }
 
 .author-link {
-    text-decoration: none;
-    color: black;
+  text-decoration: none;
+  color: black;
+}
+.postlink {
+  text-decoration: none;
+  color: inherit;
+}
+.postcredit p {
+  margin: 0;
+  color: #888;
+}
+.category {
+  color: #666;
+}
+.tags p {
+  margin: 0;
+}
+/* From Uiverse.io by Priyanshu02020 */
+#heart {
+  /* display: none; */
+  border: 0;
+  background-color: white;
+}
+
+#likeform {
+position: relative;display: flex;height: 44px;
+}
+
+.like-button {
+  
+  cursor: pointer;
+  
+  height: 44px;
+  width: 125px;
+  border-radius: 16px;
+  border: none;
+  /* background-color: #fff; */
+  overflow: hidden;
+  /* box-shadow: inset -2px -2px 5px rgba(255, 255, 255, 0.2),
+    inset 2px 2px 5px rgba(0, 0, 0, 0.1), 4px 4px 10px rgba(0, 0, 0, 0.4),
+    -2px -2px 8px rgba(255, 255, 255, 0.1); */
+  box-shadow: 2px 2px 7px 1px #888;
+}
+
+.like {
+  width: 50%;
+  height: 100%;
+  display: flex;
+  cursor: pointer;
+  align-items: center;
+  justify-content: space-evenly;
+}
+
+.like-icon {
+  height: 28px;
+  width: 28px;
+}
+
+.like-text {
+  color: #404040;
+  font-size: 16px;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.like-count {
+  position: absolute;
+  right: 0;
+  width: 50%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #717070;
+  font-size: 16px;
+  border-left: 2px solid #4e4e4e;
+  transition: all 0.5s ease-out;
+}
+
+.liked {
+  fill: #fc4e4e;
+  animation: enlarge 0.2s ease-out;
+  transition: all 0.2s ease-in;
+}
+.unliked {
+  fill: #505050;
+  transition: all 0.2s ease-in;
+}
+.hide {
+    display: none;
+}
+
+@keyframes enlarge {
+  0% {
+    transform: scale(0.5);
+  }
+  100% {
+    transform: scale(1.2);
+  }
+}
+
+#chosentags {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.tag {
+  background: #005fff26;
+  color: #000000e0;
+  padding: 5px 10px;
+  font-size: 14px;
+  cursor: pointer;
+  width: min-content;
+  /* box-shadow: 0px 0px 5px 1px #005fff26; */
+  border-radius: 20px;
 }

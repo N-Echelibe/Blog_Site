@@ -1,0 +1,32 @@
+<% posts.forEach(post=> { %>
+  <div class="col timeline">
+    <div class="card h-100">
+      <a href="/post/<%= post.post_id %>" class="postlink">
+        <img src="<%= post.thumbnail %>" class="card-img-top" alt="..." />
+      </a>
+      <div class="col p-3 d-flex flex-column position-static">
+        <p class="d-inline-block mb-2 fw-semibold category">Design</p>
+        <a href="/post/<%= post.post_id %>" class="postlink">
+          <h5 class="mb-0 fw-bold">
+            <%= post.title %>
+          </h5>
+        </a>
+        <div class="tags">
+          <p>
+            <% post.tags.forEach((tag)=> {%>
+              <a href="/tags/<%= tag.name %>"
+                class="link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">
+                <%= tag.name %>
+              </a>
+              <% }) %>
+          </p>
+        </div>
+        <div class="postcredit mt-2">
+          <p><small>by <%= post.users.username %> • <%= post.relativeTime %></small></p>
+        </div>
+
+
+      </div>
+    </div>
+  </div>
+  <% }) %>

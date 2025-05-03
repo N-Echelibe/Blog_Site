@@ -9,17 +9,52 @@
               <h2 class="display-5 link-body-emphasis mb-1">
                 <%=post.title%>
               </h2>
-              <p class="blog-post-meta">
-                <%= post.created_at %> by <a href="#">Mark</a>
+              <p class="blog-post-meta mb-1">
+                <%= post.created_at %> by <a href="/profile/@<%= post.users.username %>">
+                    <%= post.users.username %>
+                  </a>
               </p>
+              <div>
+                <p>
+                  <% post.tags.forEach((tag)=> {%>
+                    <a href="/tags/<%= tag.name %>"
+                      class="link-offset-2 link-offset-3-hover link-underline link-underline-opacity-0 link-underline-opacity-75-hover">
+                      <%= tag.name %>
+                    </a>
+                    <% }) %>
+                </p>
+              </div>
               <div><%- content %></div>
             </article>
-            <!-- Button trigger modal -->
+            <!-- From Uiverse.io by Priyanshu02020 -->
+            <div class="like-button">
+              <form id="likeform">
+                <input class="on" type="hidden" name="like" value="<%= post.post_id %>" />
+                <!-- <input type="hidden" name="liked" value="<%= liked %>"> -->
+                <button class="like" id="heart" type="submit">
+                  <% if (!liked) { %>
+                    <svg id="hart" class="like-icon unliked" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path
+                        d="m11.645 20.91-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z">
+                      </path>
+                    </svg>
+                    <% } else { %>
+                      <svg id="hart" class="like-icon liked" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                          d="m11.645 20.91-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z">
+                        </path>
+                      </svg>
+                      <% } %>
+                </button>
+                <div>
+                  <span id="count" class="like-count one"><%= count %></span>
+                </div>
+              </form>
+            </div>
 
 
             <!-- Modal -->
-            <div class="modal fade" id="thumbnail" tabindex="-1" aria-labelledby="exampleModalLabel"
-              aria-hidden="true">
+            <div class="modal fade" id="thumbnail" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
               <div class="modal-dialog modal-xl ">
                 <div class="modal-content">
                   <div class="modal-header">
@@ -33,5 +68,21 @@
               </div>
             </div>
           </div>
+          <script>
+            const like = document.getElementById("likeform")
+            const heart = document.getElementById("hart")
+            const likecount = document.getElementById("count")
+            like.addEventListener("submit", (event) => {
+              event.preventDefault();
+              const formData = new FormData(event.target);
+              const jsonData = Object.fromEntries(formData.entries())
 
+              heart.classList.toggle("liked");
+              heart.classList.toggle("unliked");
+
+              axios.post("/like", jsonData).then((response) => {
+                likecount.innerHTML = `${response.data.likecount}`;
+              })
+            })
+          </script>
           <%- include("partials/footer.ejs")%>

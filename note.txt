@@ -1,8 +1,9 @@
-fix (req.user being passed) logic in all pages
+remove lede
+fixed thumbnail size
+category(for site filtering), title, tags, author, date(some not all)
 
-design the frontend to display the authors
-
-
+side thoughts
+ - sort posts by views, then pick the first 100 or smtn and randomize the order
 
 Error Handlers to set
   username already exists (profile page)
@@ -12,7 +13,4 @@ Error Handlers to set
 
 Functionalities to set
   Logged in users can't visit login/signup page(redirect them)
-
-To test
-  created_at column in userPosts
 

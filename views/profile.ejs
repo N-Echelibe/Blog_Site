@@ -157,34 +157,7 @@
                       <% if (posts.length==0) { %>
                         <h5>No Posts Yet</h5>
                         <% } else { %>
-                          <% posts.forEach(post=> { %>
-                            <div class="col timeline">
-                              <div class="card h-100">
-                                <img src="<%= post.thumbnail %>" class="card-img-top" alt="..." />
-                                <div class="col p-4 d-flex flex-column position-static">
-                                  <strong class="d-inline-block mb-2 text-success-emphasis">
-                                    <%= post.category %>
-                                  </strong>
-                                  <h3 class="mb-0">
-                                    <%= post.title %>
-                                  </h3>
-                                  <div class="mb-1 text-body-secondary">
-                                    <%= post.created_at %>
-                                  </div>
-                                  <p class="mb-auto">
-                                    <%= post.lede %>
-                                  </p>
-                                  <a href="/post/<%= post.post_id %>"
-                                    class="icon-link gap-1 icon-link-hover stretched-link">
-                                    Continue reading
-                                    <svg class="bi">
-                                      <use xlink:href="#chevron-right"></use>
-                                    </svg>
-                                  </a>
-                                </div>
-                              </div>
-                            </div>
-                            <% }) %>
+                          <%- include('partials/prender.ejs', {posts: posts}) %>
                               <% } %>
 
                 </div>

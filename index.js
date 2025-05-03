@@ -5,10 +5,8 @@ import multer from "multer";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
 import cookieParser from "cookie-parser";
+import { formatDistanceToNow, differenceInDays, format } from "date-fns";
 import { marked } from "marked";
-import { relative } from "path";
-import { ifError } from "assert";
-import { log } from "console";
 // ☝️ is used to convert markdown content to HTML
 
 dotenv.config();
@@ -132,14 +130,84 @@ async function uploadImage(req, folder, supabase) {
     console.log("uploadImage function");
   }
 }
+function formatPostDate(dateString) {
+  const date = new Date(dateString);
+  const daysAgo = differenceInDays(new Date(), date);
+
+  if (daysAgo <= 7) {
+    return formatDistanceToNow(date, { addSuffix: true }); // e.g. "5 days ago"
+  } else {
+    return format(date, "MMM d, yyyy"); // e.g. "Apr 14, 2025"
+  }
+}
+async function fetchPost(supabase, where, variable) {
+  let query = supabase
+    .from("userPosts")
+    .select(`*, tags (name), users (username)`);
+
+  switch (where) {
+    case "home":
+      break;
+    case "search":
+      query = query.ilike("title", `%${variable}%`);
+      break;
+    case "profile":
+      query = query
+        .eq("user_id", variable)
+        .order("post_id", { ascending: false });
+      break;
+    case "post":
+      query = query.eq("post_id", variable).single();
+      break;
+    default:
+      throw new Error("Invalid 'where' parameter at fetchPost()");
+  }
+
+  const { data: posts, error } = await query;
+  if (error) throw error;
+
+  if (Array.isArray(posts)) {
+    posts.forEach((post) => {
+      post.relativeTime = formatPostDate(post.created_at);
+    });
+  }
+
+  return posts;
+}
+async function likecount(supabase, where, post_id, user_id) {
+  switch (where) {
+    case "post":
+      const { data: data1, error: error1 } = await supabase
+        .from("liked_posts")
+        .select("*")
+        .eq("post_id", post_id);
+      return data1;
+    case "profile":
+      let totalcount = 0;
+      const { data: data2, error } = await supabase
+        .from("userPosts")
+        .select("post_id")
+        .eq("user_id", user_id);
+      if (data2) {
+        for (post of data2) {
+          const { count, error } = await supabase
+            .from("liked_posts")
+            .select("*", { count: "exact", head: true })
+            .eq("post_id", post.post_id);
+          totalcount += count;
+        }
+      }
+      return totalcount;
+    default:
+      console.log("error at likecount()");
+      break;
+  }
+}
 
 app.get("/", authenticate, async (req, res) => {
   const supabaseAuth = supabaseWithAuth(req);
   try {
-    const { data: posts, error } = await supabaseAuth
-      .from("userPosts")
-      .select("*");
-    if (error) throw error;
+    const posts = await fetchPost(supabaseAuth, "home");
     const userinfo = await getUserInfo(req.user.id, supabaseAuth);
     res.render("home.ejs", { user: userinfo, posts: posts });
   } catch (err) {
@@ -151,15 +219,18 @@ app.get("/post/:id", authenticate, async (req, res) => {
   const supabaseAuth = supabaseWithAuth(req);
   const id = req.params.id;
   try {
-    const { data, error } = await supabaseAuth
-      .from("userPosts")
-      .select("*")
-      .eq("post_id", id)
-      .single();
-    if (error) throw error;
+    const data = await fetchPost(supabaseAuth, "post", id);
     const userinfo = await getUserInfo(req.user.id, supabaseAuth);
     const content = await marked(data.content);
-    res.render("post.ejs", { user: userinfo, post: data, content: content });
+    const postlikes = await likecount(supabaseAuth, "post", id);
+    let liked = postlikes.some((post) => post.user_id == req.user.id)
+    res.render("post.ejs", {
+      user: userinfo,
+      post: data,
+      content: content,
+      count: postlikes.length,
+      liked: liked,
+    });
   } catch (err) {
     console.log(err);
   }
@@ -255,9 +326,11 @@ app.post("/confirm-account", async (req, res) => {
   }
 });
 
-app.get("/modify", authenticate, (req, res) => {
+app.get("/modify", authenticate, async (req, res) => {
   if (!req.user) return res.redirect("/login");
-  res.render("modify.ejs");
+  const supabaseAuth = supabaseWithAuth(req);
+  const userInfo = await getUserInfo(req.user.id, supabaseAuth);
+  res.render("modify.ejs", { user: userInfo });
 });
 
 app.post(
@@ -265,29 +338,83 @@ app.post(
   authenticate,
   upload.single("thumbnail"),
   async (req, res) => {
-    if (!req.file) {
-      return res.status(400).json({ message: "No file found" });
+    if (!req.file || !req.body.category) {
+      return res.status(400).json({ message: "Missing file or no category" });
     }
     const supabaseAuth = supabaseWithAuth(req);
+    const tags = req.body.tags;
+    const tagArray = tags.trim() ? tags.trim().split(",") : [];
     try {
       const { filepath, imageURL } = await uploadImage(
         req,
         "thumbnail/",
         supabaseAuth
       );
-      const { data, error } = await supabaseAuth.from("userPosts").insert([
-        {
-          user_id: req.user.id,
-          title: req.body.title,
-          content: req.body.content,
-          thumbnail: imageURL,
-          category: req.body.category,
-          lede: req.body.lede,
-          filepath: filepath,
-        },
-      ]);
+      const { data: post, error } = await supabaseAuth
+        .from("userPosts")
+        .insert([
+          {
+            user_id: req.user.id,
+            title: req.body.title,
+            content: req.body.content,
+            category: req.body.category,
+            thumbnail: imageURL,
+            filepath: filepath,
+          },
+        ])
+        .select("*")
+        .single();
+      console.log(post);
       if (error) throw error;
-      res.json({ redirect: "/profile" });
+      try {
+        for (const tag of tagArray) {
+          const { data: check, error: checkerror } = await supabaseAuth
+            .from("tags")
+            .select("*")
+            .eq("name", tag)
+            .single();
+          if (check) {
+            const { error } = await supabaseAuth.from("post_tag").insert([
+              {
+                post_id: post.post_id,
+                tag_id: check.id,
+              },
+            ]);
+            if (error) {
+              console.log("if check true");
+              throw error;
+            }
+          } else {
+            const { data: tags, error: tagerror } = await supabaseAuth
+              .from("tags")
+              .insert([
+                {
+                  name: tag,
+                },
+              ])
+              .select("*")
+              .single();
+            if (tagerror) {
+              console.log("tagerror");
+              throw tagerror;
+            }
+            const { data, error } = await supabaseAuth.from("post_tag").insert([
+              {
+                post_id: post.post_id,
+                tag_id: tags.id,
+              },
+            ]);
+            if (error) {
+              console.log("second query");
+              throw error;
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Error processing tags:", err);
+      }
+      // forEach is a synchronous function
+      res.status(200);
     } catch (err) {
       console.log(err);
     }
@@ -299,10 +426,7 @@ app.get("/profile/@:username", authenticate, async (req, res) => {
   const supabaseAuth = supabaseWithAuth(req);
   let myProfile = false;
   try {
-    const userinfo = await getUserInfo(
-      req.user.id,
-      supabaseAuth
-    );
+    const userinfo = await getUserInfo(req.user.id, supabaseAuth);
     const { data: profile, error: profileerror } = await supabaseAuth
       .from("users")
       .select("*")
@@ -312,12 +436,7 @@ app.get("/profile/@:username", authenticate, async (req, res) => {
     if (req.user && req.user.id == profile.user_id) {
       myProfile = true;
     }
-    const { data: posts, error: postsError } = await supabaseAuth
-      .from("userPosts")
-      .select("*")
-      .eq("user_id", profile.user_id)
-      .order("post_id", { ascending: false });
-    if (postsError) throw postsError;
+    const posts = await fetchPost(supabaseAuth, "profile", profile.user_id);
     const { count: followers, error: followerError } = await supabaseAuth
       .from("followers")
       .select("follower", { count: "exact", head: true })
@@ -442,11 +561,16 @@ app.get("/query", authenticate, async (req, res) => {
       .select("username")
       .ilike("username", `%${q}%`);
     if (authorerror) throw authorerror;
-    const data = [...posts, ...author]; // combines arrays together
+    const { data: tags, error: tagerror } = await supabaseAuth
+      .from("tags")
+      .select("name")
+      .ilike("name", `%${q}%`);
+    if (tagerror) throw tagerror;
+    const data = [...posts, ...author, ...tags]; // combines arrays together
     const results = data.map((obj) => Object.values(obj)[0]); // selects the values in each object in the array. adding [0] at the end selects the first property in each object. By default, each object will return an array unless [] is used
+    const tag_names = tags.map((obj) => Object.values(obj)[0]);
     results.sort();
-    console.log(results);
-    res.json(results);
+    res.json({results: results, tags: tag_names});
   } catch (error) {
     console.error(error);
   }
@@ -455,18 +579,14 @@ app.get("/query", authenticate, async (req, res) => {
 app.post("/search", authenticate, async (req, res) => {
   const { search } = req.body;
   // console.log(search);
-  res.json({redirect: `/search?q=${search}`});
+  res.json({ redirect: `/search?q=${search}` });
 });
 
 app.get("/search", authenticate, async (req, res) => {
-  const {q} = req.query;
+  const { q } = req.query;
   const supabaseAuth = supabaseWithAuth(req);
   try {
-    const { data: posts, error: posterror } = await supabaseAuth
-      .from("userPosts")
-      .select("*")
-      .ilike("title", `%${q}%`);
-    if (posterror) throw posterror;
+    const posts = await fetchPost(supabaseAuth, "search", q);
 
     const { data: authors, error: authorerror } = await supabaseAuth
       .from("users")
@@ -484,7 +604,57 @@ app.get("/search", authenticate, async (req, res) => {
     console.error(error);
     res.status(500).send("An error occurred while processing your request.");
   }
-})
+});
+
+app.post("/like", authenticate, async (req, res) => {
+  if (!req.user) res.redirect("/login");
+  const supabaseAuth = supabaseWithAuth(req);
+  try {
+    const { data, error } = await supabaseAuth
+      .from("liked_posts")
+      .select("*")
+      .eq("user_id", req.user.id)
+      .eq("post_id", req.body.like)
+      .single();
+    if (data) {
+      console.log("deleting...")
+      const { data, error } = await supabaseAuth
+        .from("liked_posts")
+        .delete()
+        .eq("user_id", req.user.id)
+        .eq("post_id", req.body.like);
+      if (error) {
+        console.log("error deleting");
+        throw error;
+      }console.log("deleted!")
+    } else {
+      console.log("inserting...")
+      const { data, error } = await supabaseAuth.from("liked_posts").insert([
+        {
+          user_id: req.user.id,
+          post_id: req.body.like,
+        },
+      ]);
+      if (error) {
+        console.log("error inserting");
+        throw error;
+      }
+      console.log("inserted!")
+    }
+    const { count, error: counterror } = await supabaseAuth
+      .from("liked_posts")
+      .select("*", { count: "exact", head: true })
+      .eq("post_id", req.body.like);
+    if (counterror) {
+      console.log("error counting");
+      throw error;
+    }
+    console.log(`${count} likes`)
+    res.json({ likecount: count });
+  } catch (error) {
+    console.log(`Error at /like route: ${error}`);
+  }
+});
 
 app.get("/logout", authenticate, async (req, res) => {
   const supabaseAuth = supabaseWithAuth(req);
