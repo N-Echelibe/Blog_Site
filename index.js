@@ -208,7 +208,7 @@ app.get("/", authenticate, async (req, res) => {
   const supabaseAuth = supabaseWithAuth(req);
   try {
     const posts = await fetchPost(supabaseAuth, "home");
-    const userinfo = await getUserInfo(req.user.id, supabaseAuth);
+    const userinfo = await getUserInfo(req.user?.id, supabaseAuth);
     res.render("home.ejs", { user: userinfo, posts: posts });
   } catch (err) {
     console.log(err);
@@ -220,7 +220,7 @@ app.get("/post/:id", authenticate, async (req, res) => {
   const id = req.params.id;
   try {
     const data = await fetchPost(supabaseAuth, "post", id);
-    const userinfo = await getUserInfo(req.user.id, supabaseAuth);
+    const userinfo = await getUserInfo(req.user?.id, supabaseAuth);
     const content = await marked(data.content);
     const postlikes = await likecount(supabaseAuth, "post", id);
     let liked = postlikes.some((post) => post.user_id == req.user.id)
@@ -329,7 +329,7 @@ app.post("/confirm-account", async (req, res) => {
 app.get("/modify", authenticate, async (req, res) => {
   if (!req.user) return res.redirect("/login");
   const supabaseAuth = supabaseWithAuth(req);
-  const userInfo = await getUserInfo(req.user.id, supabaseAuth);
+  const userInfo = await getUserInfo(req.user?.id, supabaseAuth);
   res.render("modify.ejs", { user: userInfo });
 });
 
@@ -414,7 +414,7 @@ app.post(
         console.error("Error processing tags:", err);
       }
       // forEach is a synchronous function
-      const userInfo = await getUserInfo(req.user.id, supabaseAuth)
+      const userInfo = await getUserInfo(req.user?.id, supabaseAuth)
       res.status(200).json({username: userInfo.user_id});
     } catch (err) {
       console.log(err);
@@ -427,7 +427,7 @@ app.get("/profile/@:username", authenticate, async (req, res) => {
   const supabaseAuth = supabaseWithAuth(req);
   let myProfile = false;
   try {
-    const userinfo = await getUserInfo(req.user.id, supabaseAuth);
+    const userinfo = await getUserInfo(req.user?.id, supabaseAuth);
     const { data: profile, error: profileerror } = await supabaseAuth
       .from("users")
       .select("*")
@@ -478,7 +478,7 @@ app.get("/profile/@:username", authenticate, async (req, res) => {
 app.post("/profile", authenticate, upload.single("pfp"), async (req, res) => {
   if (!req.user) return res.redirect("/login");
   const supabaseAuth = supabaseWithAuth(req);
-  const userinfo = await getUserInfo(req.user.id, supabaseAuth);
+  const userinfo = await getUserInfo(req.user?.id, supabaseAuth);
   try {
     let filename;
     let filepath;
@@ -595,7 +595,7 @@ app.get("/search", authenticate, async (req, res) => {
       .ilike("username", `%${q}%`);
     if (authorerror) throw authorerror;
 
-    const userinfo = await getUserInfo(req.user.id, supabaseAuth);
+    const userinfo = await getUserInfo(req.user?.id, supabaseAuth);
     res.render("search.ejs", {
       user: userinfo,
       posts: posts,
