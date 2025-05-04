@@ -7,21 +7,112 @@
                     aria-describedby="basic-addon1" name="title" required />
             </div>
             <select name="category" class="form-select mb-3" aria-label="Default select example">
-                <option value="" selected disabled>Choose a Category</option>
-                <option value="technology">Technology & Innovation</option>
-                <option value="art">Art & Creative Expression</option>
-                <option value="education">Education & Learning</option>
-                <option value="health">Health & Wellness</option>
-                <option value="career">Career & Productivity</option>
-                <option value="finance">Finance & Business</option>
-                <option value="society">Society & Philosophy</option>
-                <option value="lifestyle">Culture & Lifestyle</option>
-                <option value="entertainment">Entertainment & Media</option>
-                <option value="travel">Travel & Exploration</option>
-                <option value="science">Science & Discovery</option>
-                <option value="home">Home & Everyday Life</option>
-                <option value="news">News & Commentary</option>
-                <option value="future">Trends & Future</option>
+                <option value="">Choose a Category</option>
+
+                <optgroup label="Education & Personal Growth">
+                  <option value="edtech">Educational Technology</option>
+                  <option value="language-learning">Language Learning</option>
+                  <option value="learning-guides">Study & Learning Tips</option>
+                  <option value="personal-development">Personal Development</option>
+                  <option value="teaching">Teaching Resources</option>
+                </optgroup>
+              
+                <optgroup label="Tech & Development">
+                  <option value="blockchain">Blockchain & Crypto</option>
+                  <option value="cloud-computing">Cloud Computing</option>
+                  <option value="cybersecurity">Cybersecurity</option>
+                  <option value="data-science">Data Science</option>
+                  <option value="emerging-tech">Emerging Tech & AI</option>
+                  <option value="iot">Internet of Things (IoT)</option>
+                  <option value="mobile-apps">Mobile Development</option>
+                  <option value="software-dev">Software Development</option>
+                  <option value="tech-news">Tech News</option>
+                  <option value="tech-trends">Tech Trends & Innovations</option>
+                  <option value="web-dev">Web Development</option>
+                </optgroup>
+              
+                <optgroup label="Art, Design & Media">
+                  <option value="animation">Animation & Motion Graphics</option>
+                  <option value="fashion-design">Fashion Design</option>
+                  <option value="film-video">Film & Video Production</option>
+                  <option value="graphic-design">Graphic Design</option>
+                  <option value="music-audio">Music & Audio Production</option>
+                  <option value="photography">Photography</option>
+                  <option value="visual-art">Visual Art & Design</option>
+                  <option value="writing">Writing & Literature</option>
+                </optgroup>
+              
+                <optgroup label="Entertainment & Pop Culture">
+                  <option value="anime-manga">Anime & Manga</option>
+                  <option value="book-reviews">Book Reviews</option>
+                  <option value="celebrity-news">Celebrity News & Gossip</option>
+                  <option value="gaming">Gaming & Game Reviews</option>
+                  <option value="memes-internet">Memes & Internet Trends</option>
+                  <option value="movies-tv">Movies, TV & Pop Culture</option>
+                  <option value="music-reviews">Music Reviews & Albums</option>
+                </optgroup>
+              
+                <optgroup label="Society & Culture">
+                  <option value="activism">Activism & Movements</option>
+                  <option value="gender-identity">Gender & Identity</option>
+                  <option value="law-justice">Law & Justice</option>
+                  <option value="philosophy-ethics">Philosophy & Ethics</option>
+                  <option value="politics">Politics & Governance</option>
+                  <option value="race-culture">Race & Cultural Studies</option>
+                  <option value="social-issues">Social Issues & Advocacy</option>
+                </optgroup>
+              
+                <optgroup label="Health & Wellness">
+                  <option value="addiction-recovery">Addiction & Recovery</option>
+                  <option value="fitness">Fitness & Physical Health</option>
+                  <option value="mental-health">Mental Health & Self-Care</option>
+                  <option value="nutrition">Nutrition & Diet</option>
+                  <option value="sexual-health">Sexual Health</option>
+                  <option value="well-being">Well-being & Lifestyle</option>
+                </optgroup>
+              
+                <optgroup label="Work, Career & Business">
+                  <option value="business-growth">Business Growth & Scaling</option>
+                  <option value="business-strategy">Business Strategy</option>
+                  <option value="career-advice">Career Advice</option>
+                  <option value="e-commerce">E-commerce & Digital Marketing</option>
+                  <option value="freelancing">Freelancing & Gig Economy</option>
+                  <option value="investing">Investing & Trading</option>
+                  <option value="job-search">Job Search & Interviewing</option>
+                  <option value="personal-finance">Personal Finance</option>
+                  <option value="remote-work">Remote Work & Productivity</option>
+                  <option value="startup-advice">Startup Advice</option>
+                </optgroup>
+              
+                <optgroup label="Travel & Lifestyle">
+                  <option value="backpacking">Backpacking & Solo Travel</option>
+                  <option value="cultural-experiences">Cultural Experiences</option>
+                  <option value="dating-relationships">Dating & Relationships</option>
+                  <option value="home-living">Home Life & Habits</option>
+                  <option value="interior-design">Interior Design & Decor</option>
+                  <option value="minimalism">Minimalism & Decluttering</option>
+                  <option value="parenting">Parenting & Family</option>
+                  <option value="spirituality">Spirituality & Belief</option>
+                  <option value="travel-guides">Travel & Places</option>
+                  <option value="travel-tips">Travel Tips & Guides</option>
+                </optgroup>
+              
+                <optgroup label="Science & Future">
+                  <option value="biology">Biology & Life Sciences</option>
+                  <option value="environment-nature">Nature & Environmental Studies</option>
+                  <option value="future-thinking">Futurism & Innovation</option>
+                  <option value="physics">Physics & Chemistry</option>
+                  <option value="science-news">Scientific Research & News</option>
+                  <option value="space-astronomy">Space & Astronomy</option>
+                  <option value="sustainability">Sustainability & Green Tech</option>
+                  <option value="urban-development">Urban Development & Cities</option>
+                </optgroup>
+              
+                <optgroup label="News & Commentary">
+                  <option value="breaking-news">Breaking News</option>
+                  <option value="editorials">Editorials & Opinions</option>
+                  <option value="fact-checking">Fact-Checking & Investigations</option>
+                </optgroup>
             </select>
             <div class="input-group mb-3">
                 <input type="file" class="form-control" id="inputGroupFile04" aria-describedby="inputGroupFileAddon04"
@@ -32,7 +123,7 @@
             </div>
             <div id="body" class="mb-3"></div>
             <input type="hidden" name="content" id="content" required />
-            <div id="chosentags" class="mb-1"></div>
+            <div id="chosentags" class="mb-2"></div>
             <div class="input-group mb-2" id="tag-container">
                 <input id="tag-input" type="text" class="form-control"
                     placeholder="Add up to 5 hashtags... (#coding #fitness #meme)" aria-label="tags"
@@ -142,7 +233,7 @@
                 headers: { "Content-Type": "multipart/form-data" },
                 // ☝️ is for when a form contains files
                 // it is not needed when form contains only plain text
-            }).then((response) = window.history.back()).catch(error => console.log("error"));
+            }).then((response) = window.location.href = response.data.username).catch(error => console.log("error"));
         });
     </script>
     <%- include("partials/footer.ejs")%>

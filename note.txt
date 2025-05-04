@@ -1,6 +1,5 @@
-remove lede
-fixed thumbnail size
-category(for site filtering), title, tags, author, date(some not all)
+profile.ejs line 252 (redirect to user profile or reload page)
+modify.ejs line 236 (redirect to user profile)
 
 side thoughts
  - sort posts by views, then pick the first 100 or smtn and randomize the order

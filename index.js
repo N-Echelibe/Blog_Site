@@ -414,7 +414,8 @@ app.post(
         console.error("Error processing tags:", err);
       }
       // forEach is a synchronous function
-      res.status(200);
+      const userInfo = await getUserInfo(req.user.id, supabaseAuth)
+      res.status(200).json({username: userInfo.user_id});
     } catch (err) {
       console.log(err);
     }
