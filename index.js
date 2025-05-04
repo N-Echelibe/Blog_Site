@@ -608,7 +608,7 @@ app.get("/search", authenticate, async (req, res) => {
 });
 
 app.post("/like", authenticate, async (req, res) => {
-  if (!req.user) res.redirect("/login");
+  if (!req.user) return res.status(400).json({redirect: "/login"});
   const supabaseAuth = supabaseWithAuth(req);
   try {
     const { data, error } = await supabaseAuth

@@ -82,7 +82,7 @@
 
               axios.post("/like", jsonData).then((response) => {
                 likecount.innerHTML = `${response.data.likecount}`;
-              })
+              }).catch((error) => window.location.href = `${error.response.data.redirect}`)
             })
           </script>
           <%- include("partials/footer.ejs")%>
