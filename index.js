@@ -70,14 +70,11 @@ function cookie(res, access_token, refresh_token) {
     secure: true,
     maxAge: 3600000, // 1hr
   });
-
-  if (refresh_token) {
-    res.cookie("refresh_token", refresh_token, {
-      httpOnly: true,
-      secure: true,
-      maxAge: 30 * 86400000, // 30days
-    });
-  }
+  res.cookie("refresh_token", refresh_token, {
+    httpOnly: true,
+    secure: true,
+    maxAge: 30 * 86400000, // 30days
+  });
 }
 async function generateUsername(supabase) {
   const characters = "abcdefghijklmnopqrstuvwxyz0123456789";
@@ -223,7 +220,7 @@ app.get("/post/:id", authenticate, async (req, res) => {
     const userinfo = await getUserInfo(req.user?.id, supabaseAuth);
     const content = await marked(data.content);
     const postlikes = await likecount(supabaseAuth, "post", id);
-    let liked = postlikes.some((post) => post.user_id == req.user.id)
+    let liked = postlikes.some((post) => post.user_id == req.user.id);
     res.render("post.ejs", {
       user: userinfo,
       post: data,
@@ -236,7 +233,8 @@ app.get("/post/:id", authenticate, async (req, res) => {
   }
 });
 
-app.get("/login", (req, res) => {
+app.get("/login", authenticate, async (req, res) => {
+  if (req.user) return res.redirect("/");
   res.render("login.ejs");
 });
 
@@ -246,6 +244,15 @@ app.post("/login", async (req, res) => {
   }
   const supabaseAuth = supabaseWithAuth(req);
   const { email, password } = req.body;
+  const {
+    data: { users },
+    error,
+  } = await supabase.auth.admin.listUsers();
+  const accExists = users.some((user) => user.email == email);
+  console.log(accExists);
+  if (!accExists) {
+    return res.status(400).json({ noAcc: true });
+  }
   try {
     const { data, error } = await supabaseAuth.auth.signInWithPassword({
       email,
@@ -253,26 +260,32 @@ app.post("/login", async (req, res) => {
     });
     if (error) {
       throw error;
-    } else {
-      cookie(res, data.session.access_token, data.session.refresh_token);
-      res.json({ redirect: "/" });
     }
+    cookie(res, data.session.access_token, data.session.refresh_token);
+    res.json({ redirect: "/" });
     // When you call res.json(), res.send(), or res.end(), the response is finalized, meaning no more headers (like cookies) can be added afterward.
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-app.get("/signup", async (req, res) => {
+app.get("/signup", authenticate, async (req, res) => {
+  if (req.user) return res.redirect("/");
   res.render("signup.ejs");
 });
 
 app.post("/signup", async (req, res) => {
-  if (!req.body.email || !req.body.password) {
-    return res.status(400).json("Username or Password not specified");
-  }
   let supabaseAuth = supabaseWithAuth(req);
-  const { password, email, username } = req.body;
+  const { password, email } = req.body;
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
+  if (!emailPattern.test(email)) {
+    return res.status(400).json({ emailerror: true });
+  }
+  if (!passwordPattern.test(password)) {
+    return res.status(400).json({ passworderror: true });
+  }
+
   console.log(email);
   try {
     const { data, error } = await supabaseAuth.auth.signUp({
@@ -414,8 +427,8 @@ app.post(
         console.error("Error processing tags:", err);
       }
       // forEach is a synchronous function
-      const userInfo = await getUserInfo(req.user?.id, supabaseAuth)
-      res.status(200).json({username: userInfo.user_id});
+      const userInfo = await getUserInfo(req.user?.id, supabaseAuth);
+      res.status(200).json({ username: userInfo.user_id });
     } catch (err) {
       console.log(err);
     }
@@ -571,7 +584,7 @@ app.get("/query", authenticate, async (req, res) => {
     const results = data.map((obj) => Object.values(obj)[0]); // selects the values in each object in the array. adding [0] at the end selects the first property in each object. By default, each object will return an array unless [] is used
     const tag_names = tags.map((obj) => Object.values(obj)[0]);
     results.sort();
-    res.json({results: results, tags: tag_names});
+    res.json({ results: results, tags: tag_names });
   } catch (error) {
     console.error(error);
   }
@@ -608,7 +621,7 @@ app.get("/search", authenticate, async (req, res) => {
 });
 
 app.post("/like", authenticate, async (req, res) => {
-  if (!req.user) return res.status(400).json({redirect: "/login"});
+  if (!req.user) return res.status(400).json({ redirect: "/login" });
   const supabaseAuth = supabaseWithAuth(req);
   try {
     const { data, error } = await supabaseAuth
@@ -618,7 +631,7 @@ app.post("/like", authenticate, async (req, res) => {
       .eq("post_id", req.body.like)
       .single();
     if (data) {
-      console.log("deleting...")
+      console.log("deleting...");
       const { data, error } = await supabaseAuth
         .from("liked_posts")
         .delete()
@@ -627,9 +640,10 @@ app.post("/like", authenticate, async (req, res) => {
       if (error) {
         console.log("error deleting");
         throw error;
-      }console.log("deleted!")
+      }
+      console.log("deleted!");
     } else {
-      console.log("inserting...")
+      console.log("inserting...");
       const { data, error } = await supabaseAuth.from("liked_posts").insert([
         {
           user_id: req.user.id,
@@ -640,7 +654,7 @@ app.post("/like", authenticate, async (req, res) => {
         console.log("error inserting");
         throw error;
       }
-      console.log("inserted!")
+      console.log("inserted!");
     }
     const { count, error: counterror } = await supabaseAuth
       .from("liked_posts")
@@ -650,7 +664,7 @@ app.post("/like", authenticate, async (req, res) => {
       console.log("error counting");
       throw error;
     }
-    console.log(`${count} likes`)
+    console.log(`${count} likes`);
     res.json({ likecount: count });
   } catch (error) {
     console.log(`Error at /like route: ${error}`);
