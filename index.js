@@ -144,6 +144,7 @@ async function fetchPost(supabase, where, variable) {
 
   switch (where) {
     case "home":
+      query = query.order("post_id", { ascending: false });
       break;
     case "search":
       query = query.ilike("title", `%${variable}%`);
@@ -154,7 +155,16 @@ async function fetchPost(supabase, where, variable) {
         .order("post_id", { ascending: false });
       break;
     case "post":
-      query = query.eq("post_id", variable).single();
+      query = query
+        .eq("post_id", variable)
+        .order("post_id", { ascending: false })
+        .single();
+      break;
+    case "tag":
+      query = query
+        .in("post_id", variable)
+        // .order("post_id", { ascending: false })
+        .limit(100);
       break;
     default:
       throw new Error("Invalid 'where' parameter at fetchPost()");
@@ -200,13 +210,52 @@ async function likecount(supabase, where, post_id, user_id) {
       break;
   }
 }
+function shuffleArray(arr) {
+  // Fisher Yates sorting algorithm
+  for (let i = arr.length-1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
 app.get("/", authenticate, async (req, res) => {
   const supabaseAuth = supabaseWithAuth(req);
+  const userinfo = await getUserInfo(req.user?.id, supabaseAuth);
   try {
-    const posts = await fetchPost(supabaseAuth, "home");
-    const userinfo = await getUserInfo(req.user?.id, supabaseAuth);
-    res.render("home.ejs", { user: userinfo, posts: posts });
+    if (req.user) {
+      const { data: likedpostid, error: likedpostiderror } = await supabaseAuth
+        .from("liked_posts")
+        .select("post_id")
+        .eq("user_id", req.user.id)
+        .limit(15);
+      let likedPostsId_arr = likedpostid.map((post) => post.post_id);
+      const { data: tagid, error: tagiderror } = await supabaseAuth
+        .from("post_tag")
+        .select("tag_id", { distinct: true })
+        .in("post_id", likedPostsId_arr);
+      let tagsid_arr = tagid.map((tag) => tag.tag_id);
+      const { data, error } = await supabaseAuth
+        .from("post_tag")
+        .select("post_id, tags!inner(name)")
+        .filter("tags.id", "in", `(${tagsid_arr.join(",")})`)
+        .order("post_id", { ascending: false })
+        .limit(1500);//liked posts(there are duplicate post_id based on the number of tags max 5. divide by average of 3 to give about 100 posts)
+      const { data: pid, error: piderror } = await supabaseAuth
+        .from("userPosts")
+        .select(`post_id`)
+        .order("post_id", { ascending: false })
+        .limit(100);//recent posts
+      const pid_arr = pid.map((post) => post.post_id);
+      const post_id = data.map((post) => post.post_id);
+      const all_posts = [...post_id, ...pid_arr]
+      const uniquePostId = [...new Set(all_posts)];
+      const posts = shuffleArray(await fetchPost(supabaseAuth, "tag", uniquePostId));
+      res.render("home.ejs", { user: userinfo, posts: posts });
+    } else {
+      const posts = await fetchPost(supabaseAuth, "home");
+      res.render("home.ejs", { user: userinfo, posts: posts });
+    }
   } catch (err) {
     console.log(err);
   }
@@ -220,7 +269,7 @@ app.get("/post/:id", authenticate, async (req, res) => {
     const userinfo = await getUserInfo(req.user?.id, supabaseAuth);
     const content = await marked(data.content);
     const postlikes = await likecount(supabaseAuth, "post", id);
-    let liked = postlikes.some((post) => post.user_id == req.user.id);
+    let liked = postlikes.some((post) => post.user_id == req.user?.id);
     res.render("post.ejs", {
       user: userinfo,
       post: data,
@@ -230,6 +279,24 @@ app.get("/post/:id", authenticate, async (req, res) => {
     });
   } catch (err) {
     console.log(err);
+  }
+});
+
+app.get("/tag/:tag", authenticate, async (req, res) => {
+  const supabaseAuth = supabaseWithAuth(req);
+  const tag = "#".concat(req.params.tag);
+  const userinfo = await getUserInfo(req.user?.id, supabaseAuth);
+  try {
+    const { data, error } = await supabaseAuth
+      .from("post_tag")
+      .select("post_id, tags!inner(name)")
+      .eq("tags.name", tag);
+    if (error) throw error;
+    const post_id = data.map((post) => post.post_id);
+    const posts = await fetchPost(supabaseAuth, "tag", post_id);
+    res.render("tag.ejs", { user: userinfo, posts: posts, tag: tag });
+  } catch (error) {
+    console.error(error);
   }
 });
 
